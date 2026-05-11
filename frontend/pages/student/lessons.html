@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darslar | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'IBM Plex Sans', sans-serif; }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
+
+        /* Kod bloki */
+        .code-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .code-block .comment { color: #64748b; }
+        .code-block .keyword { color: #7dd3fc; }
+        .code-block .string { color: #86efac; }
+        .code-block .number { color: #fda4af; }
+
+        /* Vizualizatsiya canvas */
+        #vizCanvas { border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; }
+
+        .topic-card { cursor: pointer; transition: all 0.2s; }
+        .topic-card:hover { transform: translateX(2px); }
+        .topic-card.active { background: #ecfdf5; border-color: #10b981; }
+        .topic-card.locked { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 overflow-y-auto">
+        <div class="flex h-full" style="min-height: calc(100vh - 60px)">
+
+            <!-- LEFT: Topics list -->
+            <div class="w-64 flex-shrink-0 bg-white border-r border-gray-100 overflow-y-auto hidden lg:block">
+                <div class="p-4 border-b border-gray-100">
+                    <h2 class="font-bold text-gray-900 text-sm">MTA Mavzular</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Ketma-ket o'rganiladi</p>
+                </div>
+                <div id="topicsList" class="p-3 space-y-1">
+                    <div class="text-center text-gray-400 text-xs py-6">Yuklanmoqda...</div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Lesson content -->
+            <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+                <!-- Empty state -->
+                <div id="emptyState" class="flex flex-col items-center justify-center h-96">
+                    <div class="text-6xl mb-4">📚</div>
+                    <h2 class="text-xl font-bold text-gray-700 mb-2">Mavzuni tanlang</h2>
+                    <p class="text-gray-400 text-sm text-center">Chap tarafdan mavzuni tanlang va o'rganishni boshlang</p>
+                </div>
+
+                <!-- Lesson content (hidden initially) -->
+                <div id="lessonContent" class="hidden max-w-4xl">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span id="topicBadge" class="text-xs font-bold bg-emerald-600 text-white px-2.5 py-0.5 rounded-lg mono">M1</span>
+                                <span class="text-xs text-gray-400" id="topicDuration">80 daqiqa</span>
+                            </div>
+                            <h1 id="topicTitle" class="text-xl font-bold text-gray-900"></h1>
+                        </div>
+                        <button id="markViewedBtn" onclick="markViewed()"
+                            class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+                            ✓ Darsni ko'rdim
+                        </button>
+                    </div>
+
+                    <!-- Tabs: Dars / Psevdokod / Kod / Video / Vizualizatsiya -->
+                    <div class="flex gap-1 mb-6 flex-wrap border-b border-gray-200 pb-0">
+                        <button onclick="showSection('lecture')" class="lesson-tab lesson-tab-active px-4 py-2 rounded-t-xl text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 -mb-px" data-s="lecture">📖 Dars matni</button>
+                        <button onclick="showSection('code')" class="lesson-tab px-4 py-2 rounded-t-xl text-sm font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent -mb-px" data-s="code">💻 Kod (VSCode)</button>
+                        <button onclick="showSection('video')" class="lesson-tab px-4 py-2 rounded-t-xl text-sm font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent -mb-px" data-s="video">🎬 Video</button>
+                        <button onclick="showSection('viz')" class="lesson-tab px-4 py-2 rounded-t-xl text-sm font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent -mb-px" data-s="viz">🎨 Vizualizatsiya</button>
+                    </div>
+
+                    <!-- SECTION: Dars matni -->
+                    <div id="section-lecture" class="lesson-section">
+                        <div id="lectureText" class="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4"></div>
+                    </div>
+
+                    <!-- SECTION: Kod -->
+                    <div id="section-code" class="lesson-section hidden space-y-4">
+                        <div class="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm text-amber-700">
+                            💡 Bu kodlarni <strong>Visual Studio Code</strong> da oching va ishga tushiring.
+                            Brauzerda kompilyatsiya qilinmaydi.
+                        </div>
+
+                        <!-- Psevdokod -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="font-semibold text-gray-900 text-sm">Psevdokod</span>
+                                <span class="text-xs text-gray-400">(algoritmni tushunish uchun)</span>
+                            </div>
+                            <div id="pseudoBlock" class="code-block text-slate-300"></div>
+                        </div>
+
+                        <!-- Haqiqiy kod -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-gray-900 text-sm">Haqiqiy kod</span>
+                                    <span id="codeLangBadge" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">C++</span>
+                                </div>
+                                <button onclick="copyCode()" class="text-xs text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                                    📋 Nusxalash
+                                </button>
+                            </div>
+                            <div id="codeBlock" class="code-block"></div>
+                        </div>
+
+                        <!-- VSCode yo'riqnomasi -->
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                            <h4 class="font-semibold text-gray-900 text-sm mb-2">VSCode'da ishlatish:</h4>
+                            <ol class="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                                <li>Yuqoridagi kodni nusxalang</li>
+                                <li>VSCode'da yangi fayl yarating (<code class="mono text-xs bg-gray-200 px-1 rounded">main.cpp</code>)</li>
+                                <li>Kodni joylashtiring va saqlang</li>
+                                <li>Terminal: <code class="mono text-xs bg-gray-200 px-1 rounded">g++ main.cpp -o main && ./main</code></li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- SECTION: Video -->
+                    <div id="section-video" class="lesson-section hidden">
+                        <div id="videoContainer">
+                            <div class="text-center py-16 text-gray-400">
+                                <div class="text-5xl mb-3">🎬</div>
+                                <p>Video dars qo'shilmagan</p>
+                            </div>
+                        </div>
+                        <div id="pdfDownload" class="hidden mt-4">
+                            <a id="pdfLink" href="#" target="_blank"
+                               class="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 px-4 py-3 rounded-xl font-medium text-sm transition-colors border border-red-100">
+                                📄 PDF / Slaydlarni yuklab olish
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- SECTION: Vizualizatsiya -->
+                    <div id="section-viz" class="lesson-section hidden">
+                        <div id="vizContainer" class="text-center py-16 text-gray-400">
+                            <div class="text-5xl mb-3">🎨</div>
+                            <p>Bu mavzu uchun vizualizatsiya mavjud emas</p>
+                        </div>
+                    </div>
+
+                    <!-- Status bar -->
+                    <div class="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div class="flex items-center justify-between flex-wrap gap-3">
+                            <div class="flex items-center gap-4 text-sm">
+                                <div class="flex items-center gap-1.5">
+                                    <span id="statusLesson" class="text-gray-300">○</span>
+                                    <span class="text-gray-600">Dars ko'rildi</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="statusAssignment" class="text-gray-300">○</span>
+                                    <span class="text-gray-600">Topshiriq</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="statusTest" class="text-gray-300">○</span>
+                                    <span class="text-gray-600">Test</span>
+                                </div>
+                            </div>
+                            <a href="/pages/student/assignment.html"
+                               class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                                Topshiriqga o'tish →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['student']);
+    if (user) {
+        renderLayout('sidebar');
+        loadTopics();
+    }
+
+    let currentTopicId = null;
+    let topicsData = [];
+
+    async function loadTopics() {
+        try {
+            const data = await CoursesAPI.myProgress();
+            topicsData = data.topics || [];
+            renderTopicsList(topicsData);
+
+            // URL parametr
+            const params = new URLSearchParams(window.location.search);
+            const topicId = params.get('topic');
+            if (topicId) {
+                const topic = topicsData.find(t => t.id == topicId);
+                if (topic && topic.progress?.status !== 'locked') {
+                    loadLesson(topic.id, topic.code);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderTopicsList(topics) {
+        const el = document.getElementById('topicsList');
+        const statusIcon = { locked: '🔒', unlocked: '▶️', in_progress: '📖', completed: '✅' };
+        const statusClass = {
+            locked:      'locked text-gray-400',
+            unlocked:    'border border-blue-200 text-gray-800 hover:bg-blue-50',
+            in_progress: 'border border-amber-200 text-gray-800 hover:bg-amber-50',
+            completed:   'border border-emerald-200 text-emerald-800 hover:bg-emerald-50',
+        };
+
+        el.innerHTML = topics.map(t => {
+            const st = t.progress?.status || 'locked';
+            const isLocked = st === 'locked';
+            return `
+            <div class="topic-card flex items-center gap-2 px-3 py-2 rounded-xl ${statusClass[st] || ''} ${isLocked ? 'locked' : ''}"
+                 ${!isLocked ? `onclick="loadLesson(${t.id}, '${t.code}')"` : ''}
+                 id="topic-item-${t.id}">
+                <span class="text-sm">${statusIcon[st] || '🔒'}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-xs font-bold mono text-gray-500">${t.code}</div>
+                    <div class="text-xs truncate font-medium">${t.title}</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function loadLesson(topicId, code) {
+        currentTopicId = topicId;
+
+        // Active state
+        document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('active'));
+        document.getElementById('topic-item-' + topicId)?.classList.add('active');
+
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('lessonContent').classList.remove('hidden');
+
+        try {
+            const topic = await CoursesAPI.get(topicId);
+
+            document.getElementById('topicBadge').textContent = topic.code;
+            document.getElementById('topicTitle').textContent = topic.title;
+            document.getElementById('topicDuration').textContent = (topic.lecture_duration || 80) + ' daqiqa';
+
+            // Dars matni
+            document.getElementById('lectureText').innerHTML = topic.lecture_content
+                ? topic.lecture_content
+                : `<p class="text-gray-400 italic">Dars matni hali qo'shilmagan. O'qituvchi tez orada qo'shadi.</p>`;
+
+            // Psevdokod
+            document.getElementById('pseudoBlock').textContent = topic.pseudo_code
+                || '// Psevdokod hali qo\'shilmagan';
+
+            // Haqiqiy kod
+            const langLabels = { cpp: 'C++', c: 'C', python: 'Python' };
+            document.getElementById('codeLangBadge').textContent = langLabels[topic.code_language] || 'C++';
+            document.getElementById('codeBlock').textContent = topic.real_code
+                || '// Kod hali qo\'shilmagan';
+
+            // Video
+            if (topic.video_url) {
+                const embedUrl = getEmbedUrl(topic.video_url);
+                document.getElementById('videoContainer').innerHTML = `
+                <div class="aspect-video rounded-2xl overflow-hidden bg-black">
+                    <iframe src="${embedUrl}" class="w-full h-full" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
+                </div>`;
+            } else {
+                document.getElementById('videoContainer').innerHTML = `
+                <div class="text-center py-16 text-gray-400 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div class="text-4xl mb-2">🎬</div>
+                    <p class="text-sm">Video dars qo'shilmagan</p>
+                </div>`;
+            }
+
+            // PDF
+            if (topic.pdf_file) {
+                document.getElementById('pdfLink').href = topic.pdf_file;
+                document.getElementById('pdfDownload').classList.remove('hidden');
+            } else {
+                document.getElementById('pdfDownload').classList.add('hidden');
+            }
+
+            // Vizualizatsiya
+            renderVisualization(topic.visualization_type, topic.code);
+
+            // Status bar
+            const topicMeta = topicsData.find(t => t.id === topicId);
+            const st = topicMeta?.progress;
+            document.getElementById('statusLesson').textContent = st?.lesson_viewed ? '✅' : '○';
+            document.getElementById('statusLesson').className = st?.lesson_viewed ? 'text-emerald-500' : 'text-gray-300';
+
+            // "Darsni ko'rdim" tugmasi
+            if (!st?.lesson_viewed) {
+                document.getElementById('markViewedBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('markViewedBtn').classList.add('hidden');
+            }
+
+            showSection('lecture');
+        } catch (err) {
+            if (err.message?.includes('403')) {
+                showToast('Bu mavzu qulflangan. Oldingi mavzuni yakunlang.', 'warning');
+            }
+        }
+    }
+
+    function getEmbedUrl(url) {
+        // YouTube
+        const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+        if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+        return url;
+    }
+
+    function showSection(name) {
+        document.querySelectorAll('.lesson-section').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('.lesson-tab').forEach(t => {
+            t.classList.remove('lesson-tab-active', 'border-emerald-500', 'text-emerald-600');
+            t.classList.add('border-transparent', 'text-gray-500');
+        });
+
+        document.getElementById('section-' + name).classList.remove('hidden');
+        const activeTab = document.querySelector(`[data-s="${name}"]`);
+        if (activeTab) {
+            activeTab.classList.add('border-emerald-500', 'text-emerald-600');
+            activeTab.classList.remove('border-transparent', 'text-gray-500');
+        }
+    }
+
+    async function markViewed() {
+        if (!currentTopicId) return;
+        try {
+            await CoursesAPI.markLessonViewed(currentTopicId);
+            document.getElementById('markViewedBtn').classList.add('hidden');
+            document.getElementById('statusLesson').textContent = '✅';
+            document.getElementById('statusLesson').className = 'text-emerald-500';
+            showToast('Dars ko\'rildi deb belgilandi!', 'success');
+
+            // Topiclar listini yangilash
+            loadTopics();
+        } catch (err) {
+            showToast('Xato yuz berdi', 'error');
+        }
+    }
+
+    function copyCode() {
+        const code = document.getElementById('codeBlock').textContent;
+        navigator.clipboard.writeText(code).then(() => showToast('Kod nusxalandi!', 'success'));
+    }
+
+    // ── ALGORITMLAR VIZUALIZATSIYASI ──────────────────────────
+
+    function renderVisualization(type, topicCode) {
+        const container = document.getElementById('vizContainer');
+
+        if (!type || type === 'none') {
+            container.innerHTML = `
+            <div class="text-center py-10 text-gray-400">
+                <div class="text-4xl mb-2">🎨</div>
+                <p class="text-sm">Bu mavzu uchun vizualizatsiya mavjud emas</p>
+            </div>`;
+            return;
+        }
+
+        // Vizualizatsiya canvas va controls yaratish
+        container.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex flex-wrap gap-2 items-center justify-between">
+                <h3 class="font-semibold text-gray-900">${getVizTitle(type)} vizualizatsiyasi</h3>
+                <div class="flex gap-2">
+                    <button onclick="resetViz()" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                        🔄 Qayta boshlash
+                    </button>
+                    <button onclick="stepViz()" class="text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors font-medium" id="stepBtn">
+                        ▶️ Keyingi qadam
+                    </button>
+                </div>
+            </div>
+            <canvas id="vizCanvas" width="640" height="300" class="w-full max-w-2xl mx-auto block"></canvas>
+            <div id="vizStatus" class="text-sm text-gray-600 text-center bg-gray-50 rounded-xl p-3"></div>
+            ${getVizInput(type)}
+        </div>`;
+
+        initViz(type);
+    }
+
+    function getVizTitle(type) {
+        const titles = { sort: 'Saralash', search: 'Qidiruv', bst: 'BST daraxti', avl: 'AVL daraxti', heap: 'Heap Tree', bfs: 'BFS', dfs: 'DFS' };
+        return titles[type] || type;
+    }
+
+    function getVizInput(type) {
+        if (['sort', 'search'].includes(type)) {
+            return `<div class="flex gap-2 justify-center">
+                <input type="text" id="vizInput" placeholder="Raqamlarni kiriting: 5,3,8,1,9,2"
+                    class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-400 w-64"/>
+                <button onclick="applyVizInput()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium">Qo'llash</button>
+            </div>`;
+        }
+        if (type === 'bst' || type === 'avl') {
+            return `<div class="flex gap-2 justify-center">
+                <input type="number" id="vizInsert" placeholder="Raqam kiriting..."
+                    class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-400 w-40"/>
+                <button onclick="insertBSTNode()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium">Qo'shish</button>
+            </div>`;
+        }
+        return '';
+    }
+
+    // Vizualizatsiya state
+    let vizState = { type: '', array: [], step: 0, tree: null, graph: null };
+
+    function initViz(type) {
+        vizState.type = type;
+        vizState.step = 0;
+
+        const defaults = {
+            sort:   [38, 27, 43, 3, 9, 82, 10],
+            search: [3, 9, 10, 27, 38, 43, 82],
+            bst: null, avl: null, heap: [90,80,70,60,50,40,30],
+            bfs: null, dfs: null
+        };
+        vizState.array = defaults[type] || [];
+
+        drawViz();
+    }
+
+    function resetViz() { initViz(vizState.type); }
+
+    function stepViz() {
+        vizState.step++;
+        drawViz();
+    }
+
+    function applyVizInput() {
+        const input = document.getElementById('vizInput')?.value;
+        if (!input) return;
+        vizState.array = input.split(',').map(x => parseInt(x.trim())).filter(n => !isNaN(n));
+        vizState.step = 0;
+        drawViz();
+    }
+
+    function drawViz() {
+        const canvas = document.getElementById('vizCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const type = vizState.type;
+
+        if (type === 'sort' || type === 'search' || type === 'heap') {
+            drawArrayViz(ctx, W, H, type);
+        } else if (type === 'bst' || type === 'avl') {
+            drawTreeViz(ctx, W, H);
+        } else if (type === 'bfs' || type === 'dfs') {
+            drawGraphViz(ctx, W, H, type);
+        }
+    }
+
+    function drawArrayViz(ctx, W, H, type) {
+        const arr = [...vizState.array];
+        const n = arr.length;
+        if (!n) return;
+
+        // Bubble sort simulatsiyasi (step asosida)
+        let sortedArr = [...arr];
+        const steps = [];
+        for (let i = 0; i < sortedArr.length; i++) {
+            for (let j = 0; j < sortedArr.length - i - 1; j++) {
+                steps.push({ swap: j, arr: [...sortedArr], comparing: [j, j+1] });
+                if (sortedArr[j] > sortedArr[j+1]) {
+                    [sortedArr[j], sortedArr[j+1]] = [sortedArr[j+1], sortedArr[j]];
+                }
+            }
+        }
+
+        const currentStep = Math.min(vizState.step, steps.length);
+        const displayArr = currentStep > 0 ? steps[currentStep - 1].arr : arr;
+        const comparing = currentStep > 0 ? steps[currentStep - 1].comparing : [];
+
+        const maxVal = Math.max(...displayArr, 1);
+        const barW = Math.floor((W - 40) / n);
+        const padX = 20;
+
+        displayArr.forEach((val, i) => {
+            const barH = Math.floor((val / maxVal) * (H - 80));
+            const x = padX + i * barW;
+            const y = H - 40 - barH;
+
+            const isComparing = comparing.includes(i);
+            ctx.fillStyle = isComparing ? '#f59e0b' : (currentStep > 0 && i >= n - Math.floor(currentStep / n) ? '#10b981' : '#6366f1');
+
+            ctx.beginPath();
+            ctx.roundRect(x + 2, y, barW - 4, barH, [4, 4, 0, 0]);
+            ctx.fill();
+
+            ctx.fillStyle = '#374151';
+            ctx.font = '11px IBM Plex Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText(val, x + barW / 2, H - 20);
+        });
+
+        const status = document.getElementById('vizStatus');
+        if (status) {
+            if (currentStep === 0) status.textContent = 'Dastlabki holat. "Keyingi qadam" tugmasini bosing.';
+            else if (currentStep >= steps.length) status.textContent = '✅ Saralash yakunlandi!';
+            else {
+                const s = steps[currentStep - 1];
+                status.textContent = `Qadam ${currentStep}/${steps.length}: ${s.arr[s.comparing[0]]} va ${s.arr[s.comparing[1]]} taqqoslanmoqda`;
+            }
+        }
+    }
+
+    let bstRoot = null;
+
+    function insertBSTNode() {
+        const val = parseInt(document.getElementById('vizInsert')?.value);
+        if (isNaN(val)) return;
+        bstRoot = bstInsert(bstRoot, val);
+        document.getElementById('vizInsert').value = '';
+        drawBSTOnCanvas();
+    }
+
+    function bstInsert(node, val) {
+        if (!node) return { val, left: null, right: null };
+        if (val < node.val) node.left = bstInsert(node.left, val);
+        else if (val > node.val) node.right = bstInsert(node.right, val);
+        return node;
+    }
+
+    function drawBSTOnCanvas() {
+        const canvas = document.getElementById('vizCanvas');
+        if (!canvas || !bstRoot) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBSTNode(ctx, bstRoot, canvas.width / 2, 40, canvas.width / 4);
+    }
+
+    function drawBSTNode(ctx, node, x, y, hSpacing) {
+        if (!node) return;
+        const R = 20;
+        if (node.left) {
+            ctx.strokeStyle = '#d1d5db';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - hSpacing, y + 60);
+            ctx.stroke();
+            drawBSTNode(ctx, node.left, x - hSpacing, y + 60, hSpacing / 2);
+        }
+        if (node.right) {
+            ctx.strokeStyle = '#d1d5db';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + hSpacing, y + 60);
+            ctx.stroke();
+            drawBSTNode(ctx, node.right, x + hSpacing, y + 60, hSpacing / 2);
+        }
+        ctx.fillStyle = '#6366f1';
+        ctx.beginPath();
+        ctx.arc(x, y, R, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 13px IBM Plex Mono';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(node.val, x, y);
+    }
+
+    function drawTreeViz(ctx, W, H) {
+        // BST default nodes
+        if (!bstRoot) {
+            [50, 30, 70, 20, 40, 60, 80].forEach(v => bstRoot = bstInsert(bstRoot, v));
+        }
+        drawBSTNode(ctx, bstRoot, W / 2, 40, W / 4);
+        const status = document.getElementById('vizStatus');
+        if (status) status.textContent = 'BST daraxti. Yangi tugun qo\'shish uchun raqam kiriting.';
+    }
+
+    function drawGraphViz(ctx, W, H, type) {
+        // Oddiy 6 tugunli graf
+        const nodes = [
+            { id: 0, x: W*0.2, y: H*0.5, label: 'A' },
+            { id: 1, x: W*0.4, y: H*0.2, label: 'B' },
+            { id: 2, x: W*0.6, y: H*0.2, label: 'C' },
+            { id: 3, x: W*0.4, y: H*0.75, label: 'D' },
+            { id: 4, x: W*0.6, y: H*0.75, label: 'E' },
+            { id: 5, x: W*0.8, y: H*0.5, label: 'F' },
+        ];
+        const edges = [[0,1],[0,3],[1,2],[1,3],[2,5],[3,4],[4,5]];
+        const bfsOrder = [0,1,3,2,4,5];
+        const dfsOrder = [0,1,2,5,4,3];
+        const visitedOrder = type === 'bfs' ? bfsOrder : dfsOrder;
+        const visited = new Set(visitedOrder.slice(0, vizState.step));
+
+        // Edges
+        edges.forEach(([a, b]) => {
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(nodes[a].x, nodes[a].y);
+            ctx.lineTo(nodes[b].x, nodes[b].y);
+            ctx.stroke();
+        });
+
+        // Nodes
+        nodes.forEach(n => {
+            const isVisited = visited.has(n.id);
+            const isCurrent = visitedOrder[vizState.step - 1] === n.id;
+            ctx.fillStyle = isCurrent ? '#f59e0b' : isVisited ? '#10b981' : '#6366f1';
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px IBM Plex Mono';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(n.label, n.x, n.y);
+        });
+
+        const status = document.getElementById('vizStatus');
+        if (status) {
+            if (vizState.step === 0) status.textContent = `${type.toUpperCase()} boshlash uchun "Keyingi qadam" ni bosing.`;
+            else if (vizState.step > visitedOrder.length) {
+                status.textContent = `✅ ${type.toUpperCase()} yakunlandi. Tartib: ${visitedOrder.map(i => nodes[i].label).join(' → ')}`;
+            } else {
+                status.textContent = `${type.toUpperCase()}: ${nodes[visitedOrder[vizState.step-1]].label} tuguniga tashrif buyurildi`;
+            }
+        }
+    }
+</script>
+</body>
+</html>

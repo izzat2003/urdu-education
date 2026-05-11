@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="uz" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urdu Education — Kirish</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'IBM Plex Sans', sans-serif; }
+        code, .mono { font-family: 'IBM Plex Mono', monospace; }
+
+        body {
+            background: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        /* Glowing orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.25;
+            animation: float 8s ease-in-out infinite;
+            z-index: 0;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #6366f1; top: -100px; left: -100px; }
+        .orb-2 { width: 300px; height: 300px; background: #0ea5e9; bottom: -80px; right: -80px; animation-delay: -4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+        }
+
+        .login-card {
+            position: relative;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            box-shadow: 0 0 0 1px rgba(99,102,241,0.1), 0 24px 64px rgba(0,0,0,0.5);
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #f1f5f9;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 15px;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .input-field:focus {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.08);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        .input-field::placeholder { color: rgba(148,163,184,0.6); }
+
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.01em;
+        }
+        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 20px;
+            padding: 6px 14px;
+            margin-bottom: 24px;
+        }
+
+        .error-box {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        label { color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="login-card">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="logo-badge mx-auto w-fit">
+                <span class="text-indigo-400 text-xs font-semibold mono uppercase tracking-widest">MTA1204</span>
+            </div>
+            <h1 class="text-white text-2xl font-bold mb-1">Urdu Education</h1>
+            <p class="text-slate-400 text-sm">Ma'lumotlar tuzilmasi va algoritmlar</p>
+            <p class="text-slate-500 text-xs mt-1">Urganch Davlat Universiteti</p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" novalidate>
+            <div class="mb-4">
+                <label for="username">Login</label>
+                <input
+                    type="text"
+                    id="username"
+                    class="input-field"
+                    placeholder="Loginingizni kiriting"
+                    autocomplete="username"
+                    required
+                />
+            </div>
+            <div class="mb-6">
+                <label for="password">Parol</label>
+                <div class="relative">
+                    <input
+                        type="password"
+                        id="password"
+                        class="input-field pr-12"
+                        placeholder="••••••••"
+                        autocomplete="current-password"
+                        required
+                    />
+                    <button type="button" id="togglePwd"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                        tabindex="-1">
+                        👁
+                    </button>
+                </div>
+            </div>
+
+            <div class="error-box mb-4" id="errorBox"></div>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                Kirish
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <p class="text-center text-slate-600 text-xs mt-6">
+            Kirish uchun Admin tomonidan berilgan<br>login va paroldan foydalaning
+        </p>
+
+        <!-- Role indicator (demo info) -->
+        <div class="mt-6 pt-5 border-t border-white/5">
+            <p class="text-slate-600 text-xs text-center mb-3">Rollar:</p>
+            <div class="flex justify-center gap-2">
+                <span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs border border-purple-500/20">Admin</span>
+                <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">O'qituvchi</span>
+                <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">Talaba</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script>
+        // Agar allaqachon kirgan bo'lsa — yo'naltirish
+        const existingUser = Auth.getUser();
+        if (existingUser && Auth.getAccess()) {
+            redirectByRole(existingUser.role);
+        }
+
+        function redirectByRole(role) {
+            const routes = {
+                'admin':   '/pages/admin/dashboard.html',
+                'teacher': '/pages/teacher/dashboard.html',
+                'student': '/pages/student/dashboard.html',
+            };
+            window.location.href = routes[role] || '/index.html';
+        }
+
+        // Parolni ko'rsatish/yashirish
+        document.getElementById('togglePwd').addEventListener('click', () => {
+            const pwd = document.getElementById('password');
+            pwd.type = pwd.type === 'password' ? 'text' : 'password';
+        });
+
+        // Login form
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const errorBox = document.getElementById('errorBox');
+
+            if (!username || !password) {
+                errorBox.style.display = 'block';
+                errorBox.textContent = 'Login va parolni kiriting';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> Tekshirilmoqda...';
+            errorBox.style.display = 'none';
+
+            try {
+                const user = await AuthAPI.login(username, password);
+                redirectByRole(user.role);
+            } catch (err) {
+                errorBox.style.display = 'block';
+                errorBox.textContent = 'Login yoki parol noto\'g\'ri';
+                btn.disabled = false;
+                btn.textContent = 'Kirish';
+            }
+        });
+
+        // Enter tugmasi
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>O'qituvchi paneli | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <!-- Header -->
+            <div class="mb-7">
+                <h1 class="text-2xl font-bold text-gray-900">Xush kelibsiz, <span id="teacherName" class="text-blue-600">O'qituvchi</span>!</h1>
+                <p class="text-gray-500 text-sm mt-1">MTA — Ma'lumotlar tuzilmasi va algoritmlar kursi</p>
+            </div>
+
+            <!-- Summary cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-2xl mb-2">🏫</div>
+                    <div class="text-3xl font-bold text-gray-900" id="myGroups">–</div>
+                    <div class="text-sm text-gray-500 mt-1">Guruhlarim</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-2xl mb-2">👥</div>
+                    <div class="text-3xl font-bold text-gray-900" id="myStudents">–</div>
+                    <div class="text-sm text-gray-500 mt-1">Talabalarim</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-2xl mb-2">📝</div>
+                    <div class="text-3xl font-bold text-gray-900" id="pendingGrading">–</div>
+                    <div class="text-sm text-gray-500 mt-1">Baholanmagan</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-2xl mb-2">📚</div>
+                    <div class="text-3xl font-bold text-gray-900" id="publishedTopics">–</div>
+                    <div class="text-sm text-gray-500 mt-1">Nashr mavzular</div>
+                </div>
+            </div>
+
+            <!-- Quick actions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
+                <a href="/pages/teacher/topics.html"
+                   class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl flex items-center gap-3 transition-colors shadow-sm">
+                    <span class="text-2xl">📚</span>
+                    <div><div class="font-bold text-sm">Mavzular</div><div class="text-xs text-blue-200">M1–M12 boshqarish</div></div>
+                </a>
+                <a href="/pages/teacher/assignments.html"
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl flex items-center gap-3 transition-colors shadow-sm">
+                    <span class="text-2xl">📝</span>
+                    <div><div class="font-bold text-sm">Topshiriqlar</div><div class="text-xs text-indigo-200">Guruh uchun yaratish</div></div>
+                </a>
+                <a href="/pages/teacher/grading.html"
+                   class="bg-amber-500 hover:bg-amber-600 text-white p-4 rounded-2xl flex items-center gap-3 transition-colors shadow-sm">
+                    <span class="text-2xl">✅</span>
+                    <div><div class="font-bold text-sm">Baholash</div><div class="text-xs text-amber-100">Javoblarni ko'rish</div></div>
+                </a>
+                <a href="/pages/teacher/statistics.html"
+                   class="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-2xl flex items-center gap-3 transition-colors shadow-sm">
+                    <span class="text-2xl">📊</span>
+                    <div><div class="font-bold text-sm">Statistika</div><div class="text-xs text-emerald-200">Guruh o'zlashtiruvi</div></div>
+                </a>
+            </div>
+
+            <!-- My groups + pending submissions -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Guruhlarim -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-900">Guruhlarim</h2>
+                        <a href="/pages/teacher/statistics.html" class="text-blue-600 text-sm font-medium hover:text-blue-700">Statistika →</a>
+                    </div>
+                    <div id="myGroupsList" class="divide-y divide-gray-50">
+                        <div class="p-5 text-center text-gray-400 text-sm">Yuklanmoqda...</div>
+                    </div>
+                </div>
+
+                <!-- Baholanmagan topshiriqlar -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-900">Baholanmagan topshiriqlar</h2>
+                        <a href="/pages/teacher/grading.html" class="text-amber-600 text-sm font-medium hover:text-amber-700">Barchasini baholash →</a>
+                    </div>
+                    <div id="pendingList" class="divide-y divide-gray-50">
+                        <div class="p-5 text-center text-gray-400 text-sm">Yuklanmoqda...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['teacher']);
+    if (user) {
+        renderLayout('sidebar');
+        document.getElementById('teacherName').textContent = user.full_name || user.username;
+        loadDashboard();
+    }
+
+    async function loadDashboard() {
+        try {
+            const [groups, assignments, topics] = await Promise.all([
+                GroupsAPI.list(),
+                AssessmentsAPI.assignments.list(),
+                CoursesAPI.list(),
+            ]);
+
+            const groupList = groups.results || groups;
+            const assignmentList = assignments.results || assignments;
+            const topicList = topics.results || topics;
+
+            document.getElementById('myGroups').textContent = groupList.length;
+            document.getElementById('myStudents').textContent = groupList.reduce((s, g) => s + (g.student_count || 0), 0);
+            document.getElementById('publishedTopics').textContent = topicList.filter(t => t.is_published).length;
+
+            // Baholanmagan javoblar
+            let pendingCount = 0;
+            const pendingItems = [];
+            for (const a of assignmentList.slice(0, 5)) {
+                const subs = await AssessmentsAPI.assignments.submissions(a.id).catch(() => []);
+                const ungraded = subs.filter(s => !s.grade);
+                pendingCount += ungraded.length;
+                ungraded.slice(0, 2).forEach(s => pendingItems.push({ ...s, assignment_title: a.title }));
+            }
+            document.getElementById('pendingGrading').textContent = pendingCount;
+
+            renderMyGroups(groupList);
+            renderPendingList(pendingItems);
+
+        } catch (err) {
+            console.error('Teacher dashboard error:', err);
+        }
+    }
+
+    function renderMyGroups(groups) {
+        const el = document.getElementById('myGroupsList');
+        if (!groups.length) {
+            el.innerHTML = '<p class="p-5 text-center text-gray-400 text-sm">Guruhlar yo\'q. Admin tomonidan biriktiriladi.</p>';
+            return;
+        }
+        el.innerHTML = groups.map(g => `
+        <a href="/pages/teacher/statistics.html?group=${g.id}"
+           class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors block">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-lg">🏫</div>
+                <div>
+                    <div class="font-semibold text-gray-900 text-sm">${g.name}</div>
+                    <div class="text-xs text-gray-400">${g.student_count || 0} ta talaba</div>
+                </div>
+            </div>
+            <span class="text-gray-300 text-sm">→</span>
+        </a>`).join('');
+    }
+
+    function renderPendingList(items) {
+        const el = document.getElementById('pendingList');
+        if (!items.length) {
+            el.innerHTML = '<p class="p-5 text-center text-gray-400 text-sm">✅ Barcha topshiriqlar baholangan</p>';
+            return;
+        }
+        el.innerHTML = items.map(s => `
+        <a href="/pages/teacher/grading.html"
+           class="flex items-center justify-between px-5 py-3.5 hover:bg-amber-50 transition-colors block">
+            <div class="flex-1 min-w-0">
+                <div class="font-medium text-gray-900 text-sm truncate">${s.student_name}</div>
+                <div class="text-xs text-gray-400 truncate">${s.assignment_title}</div>
+            </div>
+            <span class="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-full ml-2 flex-shrink-0">Baholanmagan</span>
+        </a>`).join('');
+    }
+</script>
+</body>
+</html>

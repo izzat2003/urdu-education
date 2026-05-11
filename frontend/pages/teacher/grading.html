@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baholash | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Amaliy ishlarni baholash</h1>
+                <p class="text-gray-500 text-sm mt-0.5">Talabalar topshirgan ishlarni ko'ring va baholang</p>
+            </div>
+
+            <!-- Guruh tanlash -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Guruhni tanlang</label>
+                        <select id="filterGroup"
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white"
+                            onchange="loadSubmissions()">
+                            <option value="">Barcha guruhlar</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Topshiriq</label>
+                        <select id="filterAssignment"
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white"
+                            onchange="loadSubmissions()">
+                            <option value="">Barcha topshiriqlar</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Holat</label>
+                        <select id="filterStatus"
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white"
+                            onchange="renderFiltered()">
+                            <option value="all">Barchasi</option>
+                            <option value="pending">Baholanmagan</option>
+                            <option value="graded">Baholangan</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats row -->
+            <div class="grid grid-cols-3 gap-3 mb-5">
+                <div class="bg-white rounded-xl p-4 border border-gray-100 text-center shadow-sm">
+                    <div class="text-2xl font-bold text-gray-900" id="statTotal">–</div>
+                    <div class="text-xs text-gray-500">Jami javoblar</div>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-100 text-center">
+                    <div class="text-2xl font-bold text-amber-600" id="statPending">–</div>
+                    <div class="text-xs text-amber-600">Baholanmagan</div>
+                </div>
+                <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 text-center">
+                    <div class="text-2xl font-bold text-emerald-600" id="statGraded">–</div>
+                    <div class="text-xs text-emerald-600">Baholangan</div>
+                </div>
+            </div>
+
+            <!-- Submissions list -->
+            <div id="submissionsList" class="space-y-3">
+                <div class="py-10 text-center text-gray-400">Yuklanmoqda...</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Baholash modali -->
+<div id="gradeModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl z-10 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">Topshiriqni baholash</h2>
+                <p class="text-sm text-gray-500" id="gradeModalSubtitle">Talaba: –</p>
+            </div>
+            <button onclick="closeModal('gradeModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <div class="p-6 space-y-4">
+            <!-- Topshiriq javobi -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Talabaning javobi:</h3>
+                <div id="submissionText" class="text-sm text-gray-700 whitespace-pre-wrap"></div>
+                <div id="submissionFile" class="mt-2 hidden">
+                    <a id="submissionFileLink" href="#" target="_blank"
+                       class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        📎 Yuklangan faylni ko'rish
+                    </a>
+                </div>
+            </div>
+
+            <!-- Baho tanlash -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">Baho qo'ying (sillabus mezonlari asosida):</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="selectGrade(5)" data-grade="5"
+                        class="grade-btn py-3 rounded-xl border-2 border-gray-200 text-center transition-all hover:border-emerald-400 hover:bg-emerald-50">
+                        <div class="text-xl font-bold text-emerald-600">5</div>
+                        <div class="text-xs text-gray-500">A'lo</div>
+                    </button>
+                    <button onclick="selectGrade(4)" data-grade="4"
+                        class="grade-btn py-3 rounded-xl border-2 border-gray-200 text-center transition-all hover:border-blue-400 hover:bg-blue-50">
+                        <div class="text-xl font-bold text-blue-600">4</div>
+                        <div class="text-xs text-gray-500">Yaxshi</div>
+                    </button>
+                    <button onclick="selectGrade(3)" data-grade="3"
+                        class="grade-btn py-3 rounded-xl border-2 border-gray-200 text-center transition-all hover:border-amber-400 hover:bg-amber-50">
+                        <div class="text-xl font-bold text-amber-600">3</div>
+                        <div class="text-xs text-gray-500">Qoniqarli</div>
+                    </button>
+                    <button onclick="selectGrade(2)" data-grade="2"
+                        class="grade-btn py-3 rounded-xl border-2 border-gray-200 text-center transition-all hover:border-red-400 hover:bg-red-50">
+                        <div class="text-xl font-bold text-red-500">2</div>
+                        <div class="text-xs text-gray-500">Qoniqarsiz</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Izoh -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">O'qituvchi izohi (ixtiyoriy)</label>
+                <textarea id="gradeFeedback" rows="3"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none"
+                    placeholder="Talabaga izoh yoki tavsiya..."></textarea>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex gap-3 bg-gray-50">
+            <button onclick="closeModal('gradeModal')"
+                class="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-100">
+                Bekor qilish
+            </button>
+            <button onclick="submitGrade()" id="submitGradeBtn"
+                class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50">
+                Baho qo'yish
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['teacher']);
+    if (user) {
+        renderLayout('sidebar');
+        initPage();
+    }
+
+    let allSubmissions = [];
+    let selectedGrade = null;
+    let activeSubmissionId = null;
+    let allAssignments = [];
+
+    async function initPage() {
+        try {
+            const [groups, assignments] = await Promise.all([
+                GroupsAPI.list().then(d => d.results || d),
+                AssessmentsAPI.assignments.list().then(d => d.results || d),
+            ]);
+            allAssignments = assignments;
+
+            // Guruh filter
+            const gSel = document.getElementById('filterGroup');
+            groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = g.name;
+                gSel.appendChild(opt);
+            });
+
+            // Topshiriq filter
+            const aSel = document.getElementById('filterAssignment');
+            assignments.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = `${a.group_name} | ${a.topic_code}: ${a.title}`;
+                aSel.appendChild(opt);
+            });
+
+            // URL parametridan assignment id olish
+            const params = new URLSearchParams(window.location.search);
+            const aId = params.get('assignment');
+            if (aId) {
+                document.getElementById('filterAssignment').value = aId;
+            }
+
+            loadSubmissions();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function loadSubmissions() {
+        const assignmentId = document.getElementById('filterAssignment').value;
+        const groupId = document.getElementById('filterGroup').value;
+
+        const el = document.getElementById('submissionsList');
+        el.innerHTML = '<div class="py-8 text-center text-gray-400">Yuklanmoqda...</div>';
+
+        try {
+            allSubmissions = [];
+
+            // Filtrlangan topshiriqlar bo'yicha javoblarni yig'ish
+            const toFetch = assignmentId
+                ? allAssignments.filter(a => a.id == assignmentId)
+                : groupId
+                    ? allAssignments.filter(a => a.group == groupId)
+                    : allAssignments;
+
+            for (const a of toFetch) {
+                const subs = await AssessmentsAPI.assignments.submissions(a.id).catch(() => []);
+                subs.forEach(s => allSubmissions.push({...s, assignment_title: a.title, topic_code: a.topic_code}));
+            }
+
+            updateStats();
+            renderFiltered();
+        } catch (err) {
+            el.innerHTML = '<div class="py-8 text-center text-red-400">Xato yuz berdi</div>';
+        }
+    }
+
+    function updateStats() {
+        const pending = allSubmissions.filter(s => !s.grade).length;
+        const graded = allSubmissions.filter(s => s.grade).length;
+        document.getElementById('statTotal').textContent = allSubmissions.length;
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statGraded').textContent = graded;
+    }
+
+    function renderFiltered() {
+        const status = document.getElementById('filterStatus').value;
+        const filtered = allSubmissions.filter(s => {
+            if (status === 'pending') return !s.grade;
+            if (status === 'graded') return !!s.grade;
+            return true;
+        });
+        renderSubmissions(filtered);
+    }
+
+    function renderSubmissions(items) {
+        const el = document.getElementById('submissionsList');
+
+        if (!items.length) {
+            el.innerHTML = `
+            <div class="text-center py-14 bg-white rounded-2xl border border-gray-100">
+                <div class="text-4xl mb-3">${document.getElementById('filterStatus').value === 'pending' ? '✅' : '📋'}</div>
+                <p class="text-gray-500 font-medium">${
+                    document.getElementById('filterStatus').value === 'pending'
+                        ? 'Barcha topshiriqlar baholangan!'
+                        : 'Topshiriq javoblari yo\'q'
+                }</p>
+            </div>`;
+            return;
+        }
+
+        el.innerHTML = items.map(s => `
+        <div class="bg-white rounded-2xl border ${!s.grade ? 'border-amber-100' : 'border-gray-100'} shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="font-bold text-gray-900">${s.student_name}</span>
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">${s.topic_code}</span>
+                        <span class="text-xs text-gray-500">${s.assignment_title}</span>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        Topshirildi: ${formatDateTime(s.submitted_at)} | Urinish: ${s.attempt_number}
+                    </div>
+                    ${s.text_answer ? `<p class="text-sm text-gray-600 mt-2 line-clamp-2 bg-gray-50 rounded-lg px-3 py-2">${s.text_answer}</p>` : ''}
+                    ${s.submitted_file ? `<div class="mt-2"><a href="${s.submitted_file}" target="_blank" class="text-xs text-blue-600 hover:underline">📎 Fayl ko'rish</a></div>` : ''}
+                    ${s.feedback ? `<p class="text-xs text-gray-500 italic mt-1">Izoh: ${s.feedback}</p>` : ''}
+                </div>
+                <div class="ml-4 flex flex-col items-end gap-2 flex-shrink-0">
+                    ${s.grade
+                        ? `<div class="text-center">${gradeBadge(s.grade)}</div>`
+                        : `<span class="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full font-medium">Baholanmagan</span>`
+                    }
+                    <button onclick="openGradeModal(${s.id}, '${s.student_name}', '${(s.text_answer||'').replace(/'/g,"\\'")}', '${s.submitted_file||''}')"
+                        class="text-sm ${s.grade ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-amber-500 hover:bg-amber-600 text-white'} px-4 py-1.5 rounded-xl font-medium transition-colors">
+                        ${s.grade ? 'Qayta baholash' : 'Baholash'}
+                    </button>
+                </div>
+            </div>
+        </div>`).join('');
+    }
+
+    // Baholash modali
+    function openGradeModal(submissionId, studentName, textAnswer, fileUrl) {
+        activeSubmissionId = submissionId;
+        selectedGrade = null;
+
+        document.getElementById('gradeModalSubtitle').textContent = 'Talaba: ' + studentName;
+        document.getElementById('submissionText').textContent = textAnswer || '(Matn javob yo\'q)';
+        document.getElementById('gradeFeedback').value = '';
+
+        if (fileUrl) {
+            document.getElementById('submissionFileLink').href = fileUrl;
+            document.getElementById('submissionFile').classList.remove('hidden');
+        } else {
+            document.getElementById('submissionFile').classList.add('hidden');
+        }
+
+        // Grade button reset
+        document.querySelectorAll('.grade-btn').forEach(btn => {
+            btn.classList.remove('border-emerald-400', 'bg-emerald-50', 'border-blue-400', 'bg-blue-50',
+                'border-amber-400', 'bg-amber-50', 'border-red-400', 'bg-red-50', 'border-gray-800');
+            btn.classList.add('border-gray-200');
+        });
+
+        openModal('gradeModal');
+    }
+
+    function selectGrade(grade) {
+        selectedGrade = grade;
+        const colorMap = {
+            5: ['border-emerald-500', 'bg-emerald-50'],
+            4: ['border-blue-500', 'bg-blue-50'],
+            3: ['border-amber-500', 'bg-amber-50'],
+            2: ['border-red-500', 'bg-red-50'],
+        };
+        document.querySelectorAll('.grade-btn').forEach(btn => {
+            btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-blue-500', 'bg-blue-50',
+                'border-amber-500', 'bg-amber-50', 'border-red-500', 'bg-red-50');
+            btn.classList.add('border-gray-200');
+        });
+        const activeBtn = document.querySelector(`[data-grade="${grade}"]`);
+        if (activeBtn) {
+            const [border, bg] = colorMap[grade];
+            activeBtn.classList.remove('border-gray-200');
+            activeBtn.classList.add(border, bg);
+        }
+    }
+
+    async function submitGrade() {
+        if (!selectedGrade) { showToast('Baho tanlang', 'warning'); return; }
+
+        const btn = document.getElementById('submitGradeBtn');
+        btn.disabled = true;
+        btn.textContent = 'Saqlanmoqda...';
+
+        try {
+            await AssessmentsAPI.assignments.grade(activeSubmissionId, {
+                grade: selectedGrade,
+                feedback: document.getElementById('gradeFeedback').value.trim()
+            });
+            closeModal('gradeModal');
+            showToast(`Baho qo'yildi: ${selectedGrade}`, 'success');
+            loadSubmissions();
+        } catch (err) {
+            showToast('Xato yuz berdi', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Baho qo\'yish';
+        }
+    }
+</script>
+</body>
+</html>

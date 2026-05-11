@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistika | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Guruh statistikasi</h1>
+                <p class="text-gray-500 text-sm mt-0.5">Guruh va talabalar o'zlashtirishini kuzating</p>
+            </div>
+
+            <!-- Guruh tanlash -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Guruhni tanlang</label>
+                <div class="flex gap-3">
+                    <select id="groupSelect"
+                        class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
+                        <option value="">Guruhni tanlang...</option>
+                    </select>
+                    <button onclick="loadGroupStats()"
+                        class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors">
+                        Ko'rish
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats (hidden initially) -->
+            <div id="statsSection" class="hidden space-y-6">
+
+                <!-- Guruh umumiy ko'rsatkichlari -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center">
+                        <div class="text-3xl font-bold text-gray-900" id="st-count">–</div>
+                        <div class="text-sm text-gray-500 mt-1">Talabalar</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center">
+                        <div class="text-3xl font-bold text-blue-600" id="st-avg">–</div>
+                        <div class="text-sm text-gray-500 mt-1">O'rtacha baho</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center">
+                        <div class="text-3xl font-bold text-emerald-600" id="st-progress">–</div>
+                        <div class="text-sm text-gray-500 mt-1">O'rtacha progress</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center">
+                        <div class="text-3xl font-bold text-amber-600" id="st-complete">–</div>
+                        <div class="text-sm text-gray-500 mt-1">Kursni tugataganlar</div>
+                    </div>
+                </div>
+
+                <!-- Grafiklar -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Baholar taqsimoti -->
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="font-semibold text-gray-900 mb-4">Baholar taqsimoti</h2>
+                        <canvas id="gradeDistChart" height="200"></canvas>
+                    </div>
+                    <!-- Mavzular bo'yicha o'rtacha -->
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <h2 class="font-semibold text-gray-900 mb-4">Mavzular bo'yicha o'rtacha baho</h2>
+                        <canvas id="topicAvgChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Talabalar jadvali -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-900">Talabalar o'zlashtiruvi</h2>
+                        <div class="flex gap-2">
+                            <input type="text" id="studentSearch" placeholder="Qidirish..."
+                                class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400 w-40"
+                                oninput="filterStudents()"/>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-100">
+                                    <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">#</th>
+                                    <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Talaba</th>
+                                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Yakunlangan</th>
+                                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">O'rtacha baho</th>
+                                    <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Progress</th>
+                                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tafsilot</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTable" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="emptyState" class="text-center py-20">
+                <div class="text-6xl mb-4">📊</div>
+                <p class="text-gray-500 text-lg font-medium">Guruhni tanlang</p>
+                <p class="text-gray-400 text-sm mt-1">Statistikani ko'rish uchun guruhni tanlang</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Talaba tafsilot modali -->
+<div id="studentDetailModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <h2 class="text-lg font-bold text-gray-900" id="studentDetailName">Talaba</h2>
+            <button onclick="closeModal('studentDetailModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <div id="studentDetailContent" class="flex-1 overflow-y-auto p-6">
+            <p class="text-center text-gray-400">Yuklanmoqda...</p>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['teacher']);
+    if (user) {
+        renderLayout('sidebar');
+        loadGroups();
+    }
+
+    let currentGroupData = null;
+    let gradeDistChart = null;
+    let topicAvgChart = null;
+
+    async function loadGroups() {
+        const groups = await GroupsAPI.list().then(d => d.results || d);
+        const sel = document.getElementById('groupSelect');
+        groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.id;
+            opt.textContent = g.name + ' (' + (g.student_count || 0) + ' talaba)';
+            sel.appendChild(opt);
+        });
+
+        // URL parametr
+        const params = new URLSearchParams(window.location.search);
+        const gId = params.get('group');
+        if (gId) {
+            sel.value = gId;
+            loadGroupStats();
+        }
+    }
+
+    async function loadGroupStats() {
+        const groupId = document.getElementById('groupSelect').value;
+        if (!groupId) { showToast('Guruhni tanlang', 'warning'); return; }
+
+        try {
+            currentGroupData = await GroupsAPI.statistics(groupId);
+
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('statsSection').classList.remove('hidden');
+
+            const students = currentGroupData.students || [];
+            const completedAll = students.filter(s => s.progress_percent >= 100).length;
+            const avgGrade = students.reduce((s, st) => s + (st.average_grade || 0), 0) / (students.length || 1);
+            const avgProgress = students.reduce((s, st) => s + (st.progress_percent || 0), 0) / (students.length || 1);
+
+            document.getElementById('st-count').textContent = students.length;
+            document.getElementById('st-avg').textContent = avgGrade.toFixed(1);
+            document.getElementById('st-progress').textContent = avgProgress.toFixed(0) + '%';
+            document.getElementById('st-complete').textContent = completedAll;
+
+            renderGradeChart(students);
+            renderTopicChart(students);
+            renderStudentsTable(students);
+        } catch (err) {
+            showToast('Statistika yuklanmadi', 'error');
+        }
+    }
+
+    function renderGradeChart(students) {
+        const counts = { 5: 0, 4: 0, 3: 0, 2: 0 };
+        students.forEach(s => {
+            const g = Math.round(s.average_grade);
+            if (counts[g] !== undefined) counts[g]++;
+        });
+
+        if (gradeDistChart) gradeDistChart.destroy();
+        gradeDistChart = new Chart(document.getElementById('gradeDistChart'), {
+            type: 'bar',
+            data: {
+                labels: ["A'lo (5)", "Yaxshi (4)", "Qoniqarli (3)", "Qoniqarsiz (2)"],
+                datasets: [{
+                    data: [counts[5], counts[4], counts[3], counts[2]],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderTopicChart(students) {
+        // M1-M12 bo'yicha o'rtacha (hozircha progress_percent dan taxmin)
+        const labels = ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+        // Real ma'lumot progress APIdan keladi, hozir taxminiy
+        const avgData = labels.map((_, i) => {
+            const completed = students.filter(s => (s.completed_topics || 0) > i).length;
+            return students.length ? (completed / students.length * 4 + 1).toFixed(1) : 0;
+        });
+
+        if (topicAvgChart) topicAvgChart.destroy();
+        topicAvgChart = new Chart(document.getElementById('topicAvgChart'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: "O'rtacha baho",
+                    data: avgData,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#6366f1',
+                    pointRadius: 5,
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 0, max: 5, grid: { color: '#f3f4f6' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    let studentsData = [];
+
+    function renderStudentsTable(students) {
+        studentsData = students;
+        renderFiltered(students);
+    }
+
+    function filterStudents() {
+        const q = document.getElementById('studentSearch').value.toLowerCase();
+        renderFiltered(studentsData.filter(s => s.student_name.toLowerCase().includes(q)));
+    }
+
+    function renderFiltered(students) {
+        const tbody = document.getElementById('studentsTable');
+
+        if (!students.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-400">Talabalar topilmadi</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = students.map((s, i) => {
+            const gradeColor = !s.average_grade ? 'text-gray-400' :
+                s.average_grade >= 4.5 ? 'text-emerald-600' :
+                s.average_grade >= 3.5 ? 'text-blue-600' :
+                s.average_grade >= 2.5 ? 'text-amber-600' : 'text-red-500';
+
+            return `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-5 py-3.5 text-sm text-gray-400 font-medium">${i + 1}</td>
+                <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
+                            ${s.student_name[0]}
+                        </div>
+                        <div>
+                            <div class="font-medium text-gray-900 text-sm">${s.student_name}</div>
+                            <div class="text-xs text-gray-400 font-mono">${s.username}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3.5 text-center">
+                    <span class="font-semibold text-gray-900">${s.completed_topics || 0}</span>
+                    <span class="text-gray-400">/12</span>
+                </td>
+                <td class="px-4 py-3.5 text-center">
+                    <span class="font-bold text-lg ${gradeColor}">
+                        ${s.average_grade ? s.average_grade.toFixed(1) : '–'}
+                    </span>
+                </td>
+                <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1">
+                            ${renderProgressBar(s.progress_percent || 0, s.progress_percent >= 75 ? 'emerald' : s.progress_percent >= 50 ? 'blue' : 'amber', 'sm')}
+                        </div>
+                        <span class="text-xs text-gray-500 w-8 text-right">${(s.progress_percent || 0).toFixed(0)}%</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3.5 text-center">
+                    <button onclick="openStudentDetail(${s.student_id}, '${s.student_name}')"
+                        class="text-xs text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                        Ko'rish
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function openStudentDetail(studentId, name) {
+        document.getElementById('studentDetailName').textContent = name;
+        openModal('studentDetailModal');
+
+        try {
+            const progressList = await AssessmentsAPI.progress.list(studentId);
+            const items = progressList.results || progressList;
+
+            const TOPICS = ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+
+            document.getElementById('studentDetailContent').innerHTML = `
+            <div class="space-y-2">
+                ${TOPICS.map(code => {
+                    const p = items.find(i => i.topic_code === code);
+                    const aGrade = p?.assignment_grade;
+                    const tGrade = p?.test_grade;
+                    const overall = p?.overall_grade;
+                    const done = p?.is_completed;
+
+                    return `
+                    <div class="flex items-center gap-3 p-3 rounded-xl ${done ? 'bg-emerald-50 border border-emerald-100' : 'bg-gray-50 border border-gray-100'}">
+                        <span class="text-xs font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded-lg w-10 text-center">${code}</span>
+                        <div class="flex-1 text-sm text-gray-700">${done ? '✅' : '⏳'} ${done ? 'Yakunlandi' : 'Jarayonda'}</div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="text-gray-400">Amaliy:</span>
+                            <span class="font-bold ${aGrade ? gradeColor(aGrade) : 'text-gray-300'}">${aGrade || '–'}</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="text-gray-400">Test:</span>
+                            <span class="font-bold ${tGrade ? gradeColor(tGrade) : 'text-gray-300'}">${tGrade || '–'}</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="text-gray-400">Jami:</span>
+                            <span class="font-bold text-base ${overall ? gradeColor(overall) : 'text-gray-300'}">${overall || '–'}</span>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        } catch (err) {
+            document.getElementById('studentDetailContent').innerHTML = '<p class="text-center text-red-400">Yuklanmadi</p>';
+        }
+    }
+</script>
+</body>
+</html>

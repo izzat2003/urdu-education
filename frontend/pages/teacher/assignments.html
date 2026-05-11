@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topshiriqlar | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; } .mono { font-family: 'IBM Plex Mono', monospace; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Topshiriqlar</h1>
+                    <p class="text-gray-500 text-sm mt-0.5">Guruh uchun amaliy va mustaqil topshiriqlar yaratish</p>
+                </div>
+                <button onclick="openModal('createAssignmentModal')"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm flex items-center gap-2">
+                    <span class="text-lg">+</span> Yangi topshiriq
+                </button>
+            </div>
+
+            <!-- Guruh filtri -->
+            <div class="flex gap-2 mb-5 flex-wrap" id="groupTabs">
+                <button class="group-tab-btn active px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white" data-group="">
+                    Barchasi
+                </button>
+                <!-- Guruhlar dinamik qo'shiladi -->
+            </div>
+
+            <!-- Assignments list -->
+            <div id="assignmentsList" class="space-y-3">
+                <div class="py-10 text-center text-gray-400">Yuklanmoqda...</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Topshiriq yaratish modali -->
+<div id="createAssignmentModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <h2 class="text-lg font-bold text-gray-900">Yangi topshiriq yaratish</h2>
+            <button onclick="closeModal('createAssignmentModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <form id="createAssignmentForm" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- MUHIM: Guruh so'raladi -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-sm text-indigo-700 font-medium">
+                ℹ️ Topshiriq qaysi guruh uchun ekanligini tanlang
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Guruh * <span class="text-red-500">← majburiy</span></label>
+                    <select id="a-group" required
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white">
+                        <option value="">Guruhni tanlang</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tur *</label>
+                    <select id="a-type" required
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white">
+                        <option value="amaliy">📋 Amaliy mashg'ulot</option>
+                        <option value="mustaqil">📖 Mustaqil ta'lim</option>
+                        <option value="oraliq">📝 Oraliq nazorat</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mavzu *</label>
+                <select id="a-topic" required
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white">
+                    <option value="">Mavzuni tanlang</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Topshiriq nomi *</label>
+                <input type="text" id="a-title" required
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                    placeholder="Masalan: A3 — Binar qidiruv algoritmini C++ da yozing"/>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Topshiriq matni *</label>
+                <textarea id="a-desc" rows="5" required
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-y"
+                    placeholder="Topshiriq shartini to'liq yozing. Talaba nima qilishi kerak, qanday format, qanday topshirishi kerak..."></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Muddati (deadline)</label>
+                    <input type="datetime-local" id="a-deadline"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Maksimal urinish soni</label>
+                    <input type="number" id="a-attempts" value="3" min="1" max="10"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                </div>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t border-gray-100 flex gap-3 bg-gray-50 flex-shrink-0">
+            <button onclick="closeModal('createAssignmentModal')"
+                class="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-100">
+                Bekor qilish
+            </button>
+            <button onclick="createAssignment()"
+                class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">
+                Yaratish
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Test yaratish modali -->
+<div id="createTestModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl z-10 max-h-[92vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <h2 class="text-lg font-bold text-gray-900">Test yaratish</h2>
+            <button onclick="closeModal('createTestModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-5">
+            <!-- Test asosiy ma'lumotlari -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Guruh *</label>
+                    <select id="test-group"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
+                        <option value="">Guruhni tanlang</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mavzu *</label>
+                    <select id="test-topic"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
+                        <option value="">Mavzu tanlang</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Test nomi *</label>
+                    <input type="text" id="test-title"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400"
+                        placeholder="Masalan: M3 — Qidiruv algoritmlari testi"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Vaqt chegarasi (daqiqa)</label>
+                    <input type="number" id="test-time" value="30" min="5" max="180"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400"/>
+                </div>
+            </div>
+
+            <!-- Savollar -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <label class="font-semibold text-gray-900">Test savollari</label>
+                    <button onclick="addQuestion()"
+                        class="text-sm text-blue-600 hover:text-blue-700 font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+                        + Savol qo'shish
+                    </button>
+                </div>
+                <div id="questionsContainer" class="space-y-4">
+                    <!-- Savollar dinamik qo'shiladi -->
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex gap-3 bg-gray-50 flex-shrink-0">
+            <button onclick="closeModal('createTestModal')"
+                class="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-100">
+                Bekor qilish
+            </button>
+            <button onclick="saveTest()"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">
+                Test saqlash
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['teacher']);
+    if (user) {
+        renderLayout('sidebar');
+        loadData();
+    }
+
+    let groups = [], topics = [], assignments = [];
+    let questionCount = 0;
+    let currentGroupFilter = '';
+
+    async function loadData() {
+        try {
+            [groups, topics] = await Promise.all([
+                GroupsAPI.list().then(d => d.results || d),
+                CoursesAPI.list().then(d => d.results || d),
+            ]);
+
+            // Guruh tablarini qo'shish
+            renderGroupTabs();
+
+            // Select'larni to'ldirish
+            ['a-group', 'test-group'].forEach(id => {
+                const sel = document.getElementById(id);
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = g.name;
+                    sel.appendChild(opt);
+                });
+            });
+            ['a-topic', 'test-topic'].forEach(id => {
+                const sel = document.getElementById(id);
+                topics.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.code + ': ' + t.title;
+                    sel.appendChild(opt);
+                });
+            });
+
+            loadAssignments();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderGroupTabs() {
+        const container = document.getElementById('groupTabs');
+        groups.forEach(g => {
+            const btn = document.createElement('button');
+            btn.className = 'group-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-600 border border-gray-200 hover:bg-gray-50';
+            btn.dataset.group = g.id;
+            btn.textContent = g.name;
+            btn.onclick = () => filterByGroup(g.id, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function filterByGroup(groupId, btn) {
+        currentGroupFilter = groupId;
+        document.querySelectorAll('.group-tab-btn').forEach(b => {
+            b.className = 'group-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-600 border border-gray-200 hover:bg-gray-50';
+        });
+        btn.className = 'group-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white';
+        renderAssignments(assignments.filter(a => !groupId || a.group == groupId));
+    }
+
+    async function loadAssignments() {
+        try {
+            const [aData, tData] = await Promise.all([
+                AssessmentsAPI.assignments.list().then(d => d.results || d),
+                AssessmentsAPI.tests.list().then(d => d.results || d),
+            ]);
+            assignments = [...aData.map(a => ({...a, kind: 'assignment'})), ...tData.map(t => ({...t, kind: 'test'}))];
+            renderAssignments(assignments);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderAssignments(items) {
+        const el = document.getElementById('assignmentsList');
+
+        if (!items.length) {
+            el.innerHTML = `
+            <div class="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                <div class="text-5xl mb-3">📝</div>
+                <p class="text-gray-500 font-medium">Topshiriqlar yo'q</p>
+                <p class="text-gray-400 text-sm mt-1">Guruh uchun topshiriq yoki test yarating</p>
+            </div>`;
+            return;
+        }
+
+        const typeColors = { amaliy: 'bg-blue-100 text-blue-700', mustaqil: 'bg-purple-100 text-purple-700', oraliq: 'bg-amber-100 text-amber-700' };
+        const typeLabels = { amaliy: 'Amaliy', mustaqil: 'Mustaqil ta\'lim', oraliq: 'Oraliq nazorat' };
+
+        el.innerHTML = items.map(item => {
+            const isTest = item.kind === 'test';
+            return `
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${isTest ? 'bg-emerald-100 text-emerald-700' : (typeColors[item.assignment_type] || 'bg-gray-100 text-gray-600')}">
+                                ${isTest ? '🎯 Test' : typeLabels[item.assignment_type] || item.assignment_type}
+                            </span>
+                            <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">${item.group_name}</span>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">${item.topic_code}</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-900">${item.title}</h3>
+                        ${item.deadline ? `<p class="text-xs text-gray-400 mt-1">⏰ Muddat: ${formatDateTime(item.deadline)}</p>` : ''}
+                    </div>
+                    <div class="ml-3 flex items-center gap-2">
+                        <span class="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            ${isTest ? (item.question_count + ' savol') : (item.submission_count + ' javob')}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    ${!isTest ? `
+                    <a href="/pages/teacher/grading.html?assignment=${item.id}"
+                       class="flex-1 text-center bg-amber-50 hover:bg-amber-100 text-amber-700 py-2 rounded-xl text-sm font-medium transition-colors">
+                        ✅ Javoblarni baholash
+                    </a>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Topshiriq yaratish
+    async function createAssignment() {
+        const data = {
+            group: parseInt(document.getElementById('a-group').value),
+            topic: parseInt(document.getElementById('a-topic').value),
+            assignment_type: document.getElementById('a-type').value,
+            title: document.getElementById('a-title').value.trim(),
+            description: document.getElementById('a-desc').value.trim(),
+            max_attempts: parseInt(document.getElementById('a-attempts').value),
+        };
+        const dl = document.getElementById('a-deadline').value;
+        if (dl) data.deadline = new Date(dl).toISOString();
+
+        if (!data.group || !data.topic || !data.title || !data.description) {
+            showToast('Barcha majburiy maydonlarni to\'ldiring', 'warning');
+            return;
+        }
+
+        try {
+            await AssessmentsAPI.assignments.create(data);
+            closeModal('createAssignmentModal');
+            document.getElementById('createAssignmentForm').reset();
+            showToast('Topshiriq yaratildi!', 'success');
+            loadAssignments();
+        } catch (err) {
+            showToast('Xato: ' + err.message, 'error');
+        }
+    }
+
+    // ── Test yaratish ─────────────────────────────────
+
+    function addQuestion() {
+        questionCount++;
+        const n = questionCount;
+        const container = document.getElementById('questionsContainer');
+
+        const div = document.createElement('div');
+        div.id = 'q-' + n;
+        div.className = 'bg-gray-50 rounded-xl p-4 border border-gray-100';
+        div.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <span class="font-semibold text-gray-700 text-sm">${n}-savol</span>
+            <button onclick="document.getElementById('q-${n}').remove(); questionCount--;"
+                class="text-xs text-red-400 hover:text-red-600">Oʻchirish</button>
+        </div>
+        <input type="text" placeholder="Savol matni..." data-q="${n}"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-blue-400"/>
+        <div class="space-y-2" id="choices-${n}">
+            ${[1,2,3,4].map(c => `
+            <div class="flex items-center gap-2">
+                <input type="radio" name="correct-${n}" value="${c}" class="w-4 h-4 text-blue-600"/>
+                <input type="text" placeholder="${c}-variant..." data-choice="${n}-${c}"
+                    class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400"/>
+                <span class="text-xs text-gray-400 w-12 text-center">
+                    ${c === 1 ? '(To\'g\'ri)' : ''}
+                </span>
+            </div>`).join('')}
+        </div>`;
+        container.appendChild(div);
+    }
+
+    async function saveTest() {
+        const groupId = parseInt(document.getElementById('test-group').value);
+        const topicId = parseInt(document.getElementById('test-topic').value);
+        const title = document.getElementById('test-title').value.trim();
+        const timeLimit = parseInt(document.getElementById('test-time').value);
+
+        if (!groupId || !topicId || !title) {
+            showToast('Guruh, mavzu va nom majburiy', 'warning');
+            return;
+        }
+
+        // Savollarni yig'ish
+        const questions = [];
+        for (let i = 1; i <= questionCount; i++) {
+            const qEl = document.querySelector(`[data-q="${i}"]`);
+            if (!qEl) continue;
+            const text = qEl.value.trim();
+            if (!text) continue;
+
+            const correctRadio = document.querySelector(`input[name="correct-${i}"]:checked`);
+            const correctIdx = correctRadio ? parseInt(correctRadio.value) : 1;
+
+            const choices = [];
+            for (let c = 1; c <= 4; c++) {
+                const choiceEl = document.querySelector(`[data-choice="${i}-${c}"]`);
+                if (choiceEl && choiceEl.value.trim()) {
+                    choices.push({ text: choiceEl.value.trim(), is_correct: c === correctIdx });
+                }
+            }
+
+            if (choices.length >= 2) {
+                questions.push({ text, order: i, choices });
+            }
+        }
+
+        if (!questions.length) {
+            showToast('Kamida 1 ta savol qo\'shing', 'warning');
+            return;
+        }
+
+        try {
+            const test = await AssessmentsAPI.tests.create({
+                group: groupId, topic: topicId, title, time_limit_minutes: timeLimit
+            });
+            await AssessmentsAPI.tests.addQuestions(test.id, questions);
+            closeModal('createTestModal');
+            showToast(`Test yaratildi! (${questions.length} savol)`, 'success');
+            questionCount = 0;
+            document.getElementById('questionsContainer').innerHTML = '';
+            loadAssignments();
+        } catch (err) {
+            showToast('Xato: ' + err.message, 'error');
+        }
+    }
+</script>
+</body>
+</html>

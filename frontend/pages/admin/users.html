@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foydalanuvchilar | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Foydalanuvchilar</h1>
+                    <p class="text-gray-500 text-sm mt-0.5">Login va parollarni faqat Admin yaratadi</p>
+                </div>
+                <button onclick="openModal('createUserModal')"
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm flex items-center gap-2">
+                    <span class="text-lg">+</span> Yangi foydalanuvchi
+                </button>
+            </div>
+
+            <!-- Filter tabs -->
+            <div class="flex gap-2 mb-6">
+                <button onclick="filterUsers('all')" class="filter-btn active px-4 py-2 rounded-xl text-sm font-medium transition-colors" data-filter="all">
+                    Barchasi
+                </button>
+                <button onclick="filterUsers('student')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium transition-colors" data-filter="student">
+                    👥 Talabalar
+                </button>
+                <button onclick="filterUsers('teacher')" class="filter-btn px-4 py-2 rounded-xl text-sm font-medium transition-colors" data-filter="teacher">
+                    👨‍🏫 O'qituvchilar
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="relative mb-4">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                <input type="text" id="searchInput" placeholder="Ism yoki login bo'yicha qidirish..."
+                    class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 bg-white"/>
+            </div>
+
+            <!-- Users table -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ism</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Login</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rol</th>
+                            <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Holat</th>
+                            <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody" class="divide-y divide-gray-50">
+                        <tr><td colspan="5" class="py-12 text-center text-gray-400">Yuklanmoqda...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Foydalanuvchi yaratish modali -->
+<div id="createUserModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gray-900">Yangi foydalanuvchi yaratish</h2>
+            <button onclick="closeModal('createUserModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <form id="createUserForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">To'liq ismi *</label>
+                <input type="text" name="full_name" required
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                    placeholder="Masalan: Aliyev Bobur Mansurovich"/>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Login *</label>
+                    <input type="text" name="username" required
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                        placeholder="aliyev_bobur"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Parol *</label>
+                    <input type="text" name="password" required
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                        placeholder="Kamida 6 belgi"/>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Rol *</label>
+                <select name="role" required
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 bg-white">
+                    <option value="">Rol tanlang</option>
+                    <option value="student">👥 Talaba</option>
+                    <option value="teacher">👨‍🏫 O'qituvchi</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <input type="email" name="email"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                        placeholder="email@gmail.com"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Telefon</label>
+                    <input type="text" name="phone"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                        placeholder="+998901234567"/>
+                </div>
+            </div>
+            <div id="createUserError" class="hidden text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl"></div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="closeModal('createUserModal')"
+                    class="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50">
+                    Bekor qilish
+                </button>
+                <button type="submit" id="createUserBtn"
+                    class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">
+                    Yaratish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Parol o'zgartirish modali -->
+<div id="editUserModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gray-900">Foydalanuvchini tahrirlash</h2>
+            <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <form id="editUserForm" class="p-6 space-y-4">
+            <input type="hidden" id="editUserId"/>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">To'liq ismi</label>
+                <input type="text" id="editFullName"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"/>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Yangi parol (ixtiyoriy)</label>
+                <input type="text" id="editPassword"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                    placeholder="O'zgartirmasangiz bo'sh qoldiring"/>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('editUserModal')"
+                    class="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50">
+                    Bekor qilish
+                </button>
+                <button type="submit"
+                    class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['admin']);
+    if (user) {
+        renderLayout('sidebar');
+        loadUsers();
+    }
+
+    let allUsers = [];
+    let currentFilter = 'all';
+
+    const roleColors = {
+        admin:   'bg-purple-100 text-purple-700',
+        teacher: 'bg-blue-100 text-blue-700',
+        student: 'bg-emerald-100 text-emerald-700',
+    };
+    const roleLabels = { admin: 'Admin', teacher: "O'qituvchi", student: 'Talaba' };
+
+    async function loadUsers() {
+        try {
+            const data = await UsersAPI.list();
+            allUsers = data.results || data;
+            renderUsers(allUsers);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function filterUsers(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            const isActive = btn.dataset.filter === filter;
+            btn.className = `filter-btn px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                isActive
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`;
+        });
+
+        const filtered = filter === 'all' ? allUsers : allUsers.filter(u => u.role === filter);
+        renderUsers(filtered);
+    }
+
+    function renderUsers(users) {
+        const tbody = document.getElementById('usersTableBody');
+
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-gray-400">Foydalanuvchilar topilmadi</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+        <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-sm flex-shrink-0">
+                        ${(u.full_name || u.username || 'U')[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="font-medium text-gray-900 text-sm">${u.full_name}</div>
+                        <div class="text-xs text-gray-400">${formatDate(u.date_joined)}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-5 py-3.5 font-mono text-sm text-gray-600">${u.username}</td>
+            <td class="px-5 py-3.5">
+                <span class="text-xs px-2.5 py-1 rounded-full font-medium ${roleColors[u.role] || ''}">
+                    ${roleLabels[u.role] || u.role}
+                </span>
+            </td>
+            <td class="px-5 py-3.5 hidden md:table-cell">
+                <span class="text-xs px-2.5 py-1 rounded-full font-medium ${u.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}">
+                    ${u.is_active ? '● Faol' : '○ Nofaol'}
+                </span>
+            </td>
+            <td class="px-5 py-3.5 text-right">
+                <div class="flex items-center justify-end gap-1">
+                    <button onclick="openEditModal(${u.id}, '${u.full_name}')"
+                        class="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors text-sm">
+                        ✏️
+                    </button>
+                    <button onclick="toggleUser(${u.id}, ${u.is_active})"
+                        class="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors text-sm"
+                        title="${u.is_active ? 'Bloklash' : 'Faollashtirish'}">
+                        ${u.is_active ? '🔒' : '🔓'}
+                    </button>
+                </div>
+            </td>
+        </tr>`).join('');
+    }
+
+    // Qidiruv
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const filtered = allUsers.filter(u =>
+            (u.full_name || '').toLowerCase().includes(q) ||
+            (u.username || '').toLowerCase().includes(q)
+        );
+        const byRole = currentFilter === 'all' ? filtered : filtered.filter(u => u.role === currentFilter);
+        renderUsers(byRole);
+    });
+
+    // Foydalanuvchi yaratish
+    document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const btn = document.getElementById('createUserBtn');
+        const errEl = document.getElementById('createUserError');
+
+        const data = {
+            full_name: form.full_name.value.trim(),
+            username: form.username.value.trim(),
+            password: form.password.value,
+            role: form.role.value,
+            email: form.email.value.trim(),
+            phone: form.phone.value.trim(),
+        };
+
+        btn.disabled = true;
+        btn.textContent = 'Yaratilmoqda...';
+        errEl.classList.add('hidden');
+
+        try {
+            await UsersAPI.create(data);
+            closeModal('createUserModal');
+            form.reset();
+            showToast('Foydalanuvchi muvaffaqiyatli yaratildi!', 'success');
+            loadUsers();
+        } catch (err) {
+            errEl.textContent = 'Xato: ' + (err.message || 'Noma\'lum xato');
+            errEl.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Yaratish';
+        }
+    });
+
+    // Tahrirlash
+    function openEditModal(userId, fullName) {
+        document.getElementById('editUserId').value = userId;
+        document.getElementById('editFullName').value = fullName;
+        document.getElementById('editPassword').value = '';
+        openModal('editUserModal');
+    }
+
+    document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('editUserId').value;
+        const data = {
+            full_name: document.getElementById('editFullName').value.trim(),
+        };
+        const pwd = document.getElementById('editPassword').value;
+        if (pwd) data.new_password = pwd;
+
+        try {
+            await UsersAPI.update(userId, data);
+            closeModal('editUserModal');
+            showToast('Saqlandi!', 'success');
+            loadUsers();
+        } catch (err) {
+            showToast('Xato yuz berdi', 'error');
+        }
+    });
+
+    async function toggleUser(userId, isActive) {
+        const action = isActive ? 'Bloklash' : 'Faollashtirish';
+        if (!confirm(`${action}ni tasdiqlaysizmi?`)) return;
+        try {
+            await UsersAPI.update(userId, { is_active: !isActive });
+            showToast(`${action} muvaffaqiyatli!`, 'success');
+            loadUsers();
+        } catch (err) {
+            showToast('Xato yuz berdi', 'error');
+        }
+    }
+
+    // Initial filter styling
+    filterUsers('all');
+</script>
+</body>
+</html>

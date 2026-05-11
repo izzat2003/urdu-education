@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talaba kabineti | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-5xl">
+            <!-- Header -->
+            <div class="mb-7">
+                <h1 class="text-2xl font-bold text-gray-900">Salom, <span id="studentName" class="text-emerald-600">Talaba</span>!</h1>
+                <p class="text-gray-500 text-sm mt-1">MTA — Ma'lumotlar tuzilmasi va algoritmlar | Urganch davlat universiteti</p>
+            </div>
+
+            <!-- Progress overview -->
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 text-white mb-6 shadow-lg">
+                <div class="flex flex-col md:flex-row md:items-center gap-5">
+                    <div class="flex-1">
+                        <p class="text-emerald-100 text-sm font-medium mb-1">Kurs progressi</p>
+                        <div class="flex items-end gap-3">
+                            <span class="text-5xl font-bold" id="progressPercent">0%</span>
+                            <span class="text-emerald-200 mb-1.5 text-sm" id="progressTopics">0 / 12 mavzu</span>
+                        </div>
+                        <div class="mt-3 bg-white/20 rounded-full h-2.5">
+                            <div id="progressBar" class="bg-white h-2.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                            <div class="text-2xl font-bold" id="avgGrade">–</div>
+                            <div class="text-xs text-emerald-100">O'rtacha baho</div>
+                        </div>
+                        <div class="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
+                            <div class="text-2xl font-bold" id="nextTopic">M1</div>
+                            <div class="text-xs text-emerald-100">Joriy mavzu</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick access -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <a href="/pages/student/lessons.html"
+                   class="bg-white border border-gray-100 shadow-sm hover:shadow-md rounded-2xl p-4 flex flex-col items-center gap-2 text-center transition-all hover:-translate-y-0.5 group">
+                    <span class="text-3xl">📚</span>
+                    <div>
+                        <div class="font-semibold text-gray-900 text-sm group-hover:text-emerald-600 transition-colors">Darslar</div>
+                        <div class="text-xs text-gray-400">M1–M12</div>
+                    </div>
+                </a>
+                <a href="/pages/student/assignment.html"
+                   class="bg-white border border-gray-100 shadow-sm hover:shadow-md rounded-2xl p-4 flex flex-col items-center gap-2 text-center transition-all hover:-translate-y-0.5 group">
+                    <span class="text-3xl">📝</span>
+                    <div>
+                        <div class="font-semibold text-gray-900 text-sm group-hover:text-emerald-600 transition-colors">Topshiriqlar</div>
+                        <div class="text-xs text-gray-400" id="pendingAssignments">–</div>
+                    </div>
+                </a>
+                <a href="/pages/student/grades.html"
+                   class="bg-white border border-gray-100 shadow-sm hover:shadow-md rounded-2xl p-4 flex flex-col items-center gap-2 text-center transition-all hover:-translate-y-0.5 group">
+                    <span class="text-3xl">🏆</span>
+                    <div>
+                        <div class="font-semibold text-gray-900 text-sm group-hover:text-emerald-600 transition-colors">Baholarim</div>
+                        <div class="text-xs text-gray-400">O'zlashtirish</div>
+                    </div>
+                </a>
+                <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex flex-col items-center gap-2 text-center">
+                    <span class="text-3xl">⏰</span>
+                    <div>
+                        <div class="font-semibold text-gray-900 text-sm" id="deadlineCount">–</div>
+                        <div class="text-xs text-gray-400">Yaqin deadline</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mavzular progressi + Topshiriqlar -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Mavzular holati -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-900">Mavzular (M1–M12)</h2>
+                        <a href="/pages/student/lessons.html" class="text-emerald-600 text-sm font-medium hover:text-emerald-700">Ko'rish →</a>
+                    </div>
+                    <div id="topicsProgress" class="p-4 space-y-2">
+                        <div class="text-center text-gray-400 text-sm py-4">Yuklanmoqda...</div>
+                    </div>
+                </div>
+
+                <!-- Kutilayotgan topshiriqlar -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-900">Topshiriqlarim</h2>
+                        <a href="/pages/student/assignment.html" class="text-emerald-600 text-sm font-medium hover:text-emerald-700">Barchasini ko'rish →</a>
+                    </div>
+                    <div id="myAssignments" class="divide-y divide-gray-50">
+                        <div class="p-5 text-center text-gray-400 text-sm">Yuklanmoqda...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['student']);
+    if (user) {
+        renderLayout('sidebar');
+        document.getElementById('studentName').textContent = user.full_name || user.username;
+        loadStudentDashboard();
+    }
+
+    async function loadStudentDashboard() {
+        try {
+            const [progressData, assignments] = await Promise.all([
+                CoursesAPI.myProgress(),
+                AssessmentsAPI.assignments.list().then(d => d.results || d),
+            ]);
+
+            // Progress kartasi
+            const completed = progressData.completed_topics || 0;
+            const percent = progressData.progress_percent || 0;
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressTopics').textContent = completed + ' / 12 mavzu';
+            document.getElementById('progressBar').style.width = percent + '%';
+
+            // O'rtacha baho
+            const summary = await AssessmentsAPI.progress.summary();
+            document.getElementById('avgGrade').textContent = summary.average_grade || '–';
+
+            // Joriy mavzu
+            const topics = progressData.topics || [];
+            const nextTopic = topics.find(t => t.progress?.status === 'unlocked' || t.progress?.status === 'in_progress');
+            document.getElementById('nextTopic').textContent = nextTopic?.code || (completed >= 12 ? '✅' : 'M1');
+
+            // Topshiriqlar
+            const pending = assignments.filter(a => {
+                // Topshirilmagan yoki baholanmagan
+                return true; // Backend filtri
+            });
+            document.getElementById('pendingAssignments').textContent = pending.length + ' ta';
+
+            // Deadline
+            const withDeadline = assignments.filter(a => a.deadline && new Date(a.deadline) > new Date());
+            document.getElementById('deadlineCount').textContent = withDeadline.length + ' ta';
+
+            // Mavzular progress
+            renderTopicsProgress(topics);
+
+            // Topshiriqlar
+            renderMyAssignments(assignments.slice(0, 5));
+
+        } catch (err) {
+            console.error('Student dashboard error:', err);
+        }
+    }
+
+    function renderTopicsProgress(topics) {
+        const el = document.getElementById('topicsProgress');
+        if (!topics.length) {
+            el.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">Mavzular yuklanmadi</p>';
+            return;
+        }
+
+        const statusInfo = {
+            locked:      { icon: '🔒', color: 'text-gray-300', bg: 'bg-gray-50' },
+            unlocked:    { icon: '▶️', color: 'text-blue-600',  bg: 'bg-blue-50' },
+            in_progress: { icon: '⏳', color: 'text-amber-600', bg: 'bg-amber-50' },
+            completed:   { icon: '✅', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        };
+
+        el.innerHTML = topics.map(t => {
+            const st = t.progress?.status || 'locked';
+            const info = statusInfo[st] || statusInfo.locked;
+            const isClickable = st !== 'locked';
+
+            return `
+            <${isClickable ? 'a href="/pages/student/lessons.html?topic=' + t.id + '"' : 'div'}
+                class="flex items-center gap-3 px-3 py-2 rounded-xl ${info.bg} ${isClickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'opacity-60'}">
+                <span class="text-lg flex-shrink-0">${info.icon}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-gray-500">${t.code}</span>
+                        <span class="text-sm font-medium text-gray-800 truncate">${t.title}</span>
+                    </div>
+                </div>
+            </${isClickable ? 'a' : 'div'}>`;
+        }).join('');
+    }
+
+    function renderMyAssignments(assignments) {
+        const el = document.getElementById('myAssignments');
+        if (!assignments.length) {
+            el.innerHTML = '<p class="p-5 text-center text-gray-400 text-sm">Topshiriqlar yo\'q</p>';
+            return;
+        }
+
+        const typeColors = {
+            amaliy: 'bg-blue-100 text-blue-700',
+            mustaqil: 'bg-purple-100 text-purple-700',
+            oraliq: 'bg-amber-100 text-amber-700',
+        };
+
+        el.innerHTML = assignments.map(a => {
+            const overdue = a.deadline && new Date(a.deadline) < new Date();
+            return `
+            <a href="/pages/student/assignment.html?id=${a.id}"
+               class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors block">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${typeColors[a.assignment_type] || 'bg-gray-100 text-gray-600'}">
+                            ${a.topic_code}
+                        </span>
+                    </div>
+                    <div class="font-medium text-gray-900 text-sm truncate">${a.title}</div>
+                    ${a.deadline ? `<div class="text-xs ${overdue ? 'text-red-500' : 'text-gray-400'} mt-0.5">
+                        ${overdue ? '⚠️ Muddat o\'tgan' : '⏰ ' + formatDate(a.deadline)}
+                    </div>` : ''}
+                </div>
+                <span class="text-gray-300 ml-2">→</span>
+            </a>`;
+        }).join('');
+    }
+</script>
+</body>
+</html>

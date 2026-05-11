@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topshiriqlarim | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-4xl">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Topshiriqlarim</h1>
+                <p class="text-gray-500 text-sm mt-0.5">Guruhingiz uchun berilgan topshiriqlar va testlar</p>
+            </div>
+
+            <!-- Filter tabs -->
+            <div class="flex gap-2 mb-5">
+                <button onclick="filterItems('all')" class="filter-tab active px-4 py-2 rounded-xl text-sm font-medium" data-f="all">Barchasi</button>
+                <button onclick="filterItems('assignment')" class="filter-tab px-4 py-2 rounded-xl text-sm font-medium" data-f="assignment">📝 Topshiriqlar</button>
+                <button onclick="filterItems('test')" class="filter-tab px-4 py-2 rounded-xl text-sm font-medium" data-f="test">🎯 Testlar</button>
+            </div>
+
+            <div id="itemsList" class="space-y-4">
+                <div class="text-center py-10 text-gray-400">Yuklanmoqda...</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Topshiriq topshirish modali -->
+<div id="submitModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl z-10 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">Topshiriq topshirish</h2>
+                <p class="text-sm text-gray-500" id="submitModalTitle">–</p>
+            </div>
+            <button onclick="closeModal('submitModal')" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <form id="submitForm" class="p-6 space-y-4">
+            <input type="hidden" id="submitAssignmentId"/>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Javobingiz (matn)</label>
+                <textarea id="submitText" rows="6"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 resize-y"
+                    placeholder="Topshiriq javobini yozing. Kod bo'lsa, kodni ham yozing..."></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Fayl yuklash (ixtiyoriy)</label>
+                <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer"
+                     onclick="document.getElementById('submitFile').click()">
+                    <div class="text-2xl mb-1">📎</div>
+                    <p class="text-sm text-gray-500">Fayl tanlash (.py, .cpp, .c, .pdf, .zip)</p>
+                    <input type="file" id="submitFile" class="hidden"
+                        accept=".py,.cpp,.c,.java,.pdf,.zip,.txt,.docx"/>
+                </div>
+                <div id="submitFileName" class="hidden mt-2 text-sm text-emerald-600 font-medium"></div>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-3 text-xs text-gray-500">
+                ⚠️ Deadline o'tgandan keyin topshiriq qabul qilinmaydi. Urinishlar soni cheklangan.
+            </div>
+            <div class="flex gap-3 pt-1">
+                <button type="button" onclick="closeModal('submitModal')"
+                    class="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50">
+                    Bekor qilish
+                </button>
+                <button type="submit" id="submitBtn"
+                    class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors">
+                    Topshirish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Test yechish modali -->
+<div id="testModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 max-h-[92vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900" id="testModalTitle">Test</h2>
+                <div class="flex items-center gap-3 mt-1">
+                    <span class="text-sm text-gray-500" id="testProgress">Savol: – / –</span>
+                    <span class="text-sm font-semibold text-amber-600" id="testTimer">⏱ 00:00</span>
+                </div>
+            </div>
+            <button onclick="if(confirm('Testdan chiqmoqchimisiz?')) closeModal('testModal')"
+                class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6" id="testQuestionsContainer">
+            <p class="text-center text-gray-400">Yuklanmoqda...</p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 flex gap-3 bg-gray-50 flex-shrink-0">
+            <button onclick="prevQuestion()" id="prevBtn" disabled
+                class="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-100 disabled:opacity-40">
+                ← Oldingi
+            </button>
+            <div class="flex-1"></div>
+            <button onclick="nextQuestion()" id="nextBtn"
+                class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors">
+                Keyingi →
+            </button>
+            <button onclick="finishTest()" id="finishBtn" class="hidden px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-colors">
+                ✅ Tugatish
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Test natijasi -->
+<div id="testResultModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 p-8 text-center">
+        <div class="text-6xl mb-4" id="resultEmoji">🎉</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2" id="resultTitle">Test yakunlandi</h2>
+        <div class="text-5xl font-bold mb-2" id="resultScore">–%</div>
+        <div class="mb-6" id="resultGrade"></div>
+        <div class="text-sm text-gray-500 mb-6" id="resultDetail"></div>
+        <button onclick="closeModal('testResultModal'); loadData();"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-colors">
+            Davom etish
+        </button>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['student']);
+    if (user) { renderLayout('sidebar'); loadData(); }
+
+    let allItems = [];
+    let currentFilter = 'all';
+    // Test state
+    let testData = { attemptId: null, testId: null, questions: [], currentQ: 0, answers: {}, timerInterval: null, totalSeconds: 0 };
+
+    async function loadData() {
+        try {
+            const [assignments, tests] = await Promise.all([
+                AssessmentsAPI.assignments.list().then(d => d.results || d),
+                AssessmentsAPI.tests.list().then(d => d.results || d),
+            ]);
+            allItems = [
+                ...assignments.map(a => ({...a, kind: 'assignment'})),
+                ...tests.map(t => ({...t, kind: 'test'})),
+            ];
+            allItems.sort((a, b) => (a.deadline && b.deadline) ? new Date(a.deadline) - new Date(b.deadline) : 0);
+            renderItems(allItems);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function filterItems(f) {
+        currentFilter = f;
+        document.querySelectorAll('.filter-tab').forEach(b => {
+            b.className = 'filter-tab px-4 py-2 rounded-xl text-sm font-medium ' +
+                (b.dataset.f === f ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50');
+        });
+        const filtered = f === 'all' ? allItems : allItems.filter(i => i.kind === f);
+        renderItems(filtered);
+    }
+
+    function renderItems(items) {
+        const el = document.getElementById('itemsList');
+        if (!items.length) {
+            el.innerHTML = `<div class="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                <div class="text-4xl mb-3">📭</div>
+                <p class="text-gray-500 font-medium">Topshiriqlar yo'q</p>
+                <p class="text-gray-400 text-sm">O'qituvchi tez orada qo'shadi</p>
+            </div>`;
+            return;
+        }
+
+        const typeColors = { amaliy: 'bg-blue-100 text-blue-700', mustaqil: 'bg-purple-100 text-purple-700', oraliq: 'bg-amber-100 text-amber-700' };
+        const typeLabels = { amaliy: 'Amaliy', mustaqil: 'Mustaqil ta\'lim', oraliq: 'Oraliq nazorat' };
+
+        el.innerHTML = items.map(item => {
+            const isTest = item.kind === 'test';
+            const overdue = item.deadline && new Date(item.deadline) < new Date();
+
+            return `
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-xl ${isTest ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'} flex items-center justify-center text-xl flex-shrink-0">
+                        ${isTest ? '🎯' : '📝'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${isTest ? 'bg-emerald-100 text-emerald-700' : (typeColors[item.assignment_type] || 'bg-gray-100 text-gray-600')}">
+                                ${isTest ? 'Test' : typeLabels[item.assignment_type]}
+                            </span>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">${item.topic_code || ''}</span>
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">${item.group_name || ''}</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-900">${item.title}</h3>
+                        ${!isTest && item.description ? `<p class="text-sm text-gray-500 mt-1 line-clamp-2">${item.description}</p>` : ''}
+                        <div class="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                            ${item.deadline
+                                ? `<span class="${overdue ? 'text-red-500 font-medium' : ''}">${overdue ? '⚠️ Muddat o\'tgan' : '⏰'} ${formatDateTime(item.deadline)}</span>`
+                                : '<span>Muddat belgilanmagan</span>'}
+                            ${isTest ? `<span>📋 ${item.question_count || 0} savol</span><span>⏱ ${item.time_limit_minutes} daqiqa</span>` : ''}
+                            ${!isTest ? `<span>🔄 ${item.max_attempts || 3} urinish</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        ${isTest
+                            ? `<button onclick="startTest(${item.id}, '${item.title}', ${item.time_limit_minutes})"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+                                Test yechish
+                               </button>`
+                            : `<button onclick="openSubmitModal(${item.id}, '${item.title}')"
+                                class="${overdue ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'} px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                                ${overdue ? 'disabled' : ''}>
+                                Topshirish
+                               </button>`
+                        }
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Topshiriq topshirish ──────────────────────────────────
+
+    function openSubmitModal(assignmentId, title) {
+        document.getElementById('submitAssignmentId').value = assignmentId;
+        document.getElementById('submitModalTitle').textContent = title;
+        document.getElementById('submitText').value = '';
+        document.getElementById('submitFile').value = '';
+        document.getElementById('submitFileName').classList.add('hidden');
+        openModal('submitModal');
+    }
+
+    document.getElementById('submitFile').addEventListener('change', function() {
+        if (this.files[0]) {
+            document.getElementById('submitFileName').textContent = '📎 ' + this.files[0].name;
+            document.getElementById('submitFileName').classList.remove('hidden');
+        }
+    });
+
+    document.getElementById('submitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const assignmentId = document.getElementById('submitAssignmentId').value;
+        const textAnswer = document.getElementById('submitText').value.trim();
+        const file = document.getElementById('submitFile').files[0];
+
+        if (!textAnswer && !file) {
+            showToast('Matn yoki fayl kiritish kerak', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Topshirilmoqda...';
+
+        try {
+            await AssessmentsAPI.assignments.submit(assignmentId, {
+                text_answer: textAnswer,
+                submitted_file: file || undefined,
+            });
+            closeModal('submitModal');
+            showToast('Topshiriq muvaffaqiyatli topshirildi!', 'success');
+        } catch (err) {
+            showToast('Xato: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Topshirish';
+        }
+    });
+
+    // ── Test yechish ──────────────────────────────────────────
+
+    async function startTest(testId, title, timeLimitMin) {
+        document.getElementById('testModalTitle').textContent = title;
+
+        try {
+            // Urinishni boshlash
+            const attempt = await AssessmentsAPI.tests.startAttempt(testId);
+            const testDetail = await AssessmentsAPI.tests.get(testId);
+            const questions = testDetail.questions || [];
+
+            if (!questions.length) {
+                showToast('Bu testda savollar yo\'q', 'warning');
+                return;
+            }
+
+            testData = {
+                attemptId: attempt.id,
+                testId,
+                questions,
+                currentQ: 0,
+                answers: {},
+                timerInterval: null,
+                totalSeconds: timeLimitMin * 60,
+            };
+
+            startTimer(timeLimitMin);
+            renderCurrentQuestion();
+            openModal('testModal');
+        } catch (err) {
+            showToast('Test boshlanmadi', 'error');
+        }
+    }
+
+    function startTimer(minutes) {
+        if (testData.timerInterval) clearInterval(testData.timerInterval);
+        let remaining = minutes * 60;
+
+        testData.timerInterval = setInterval(() => {
+            remaining--;
+            const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+            const s = (remaining % 60).toString().padStart(2, '0');
+            const timerEl = document.getElementById('testTimer');
+            if (timerEl) {
+                timerEl.textContent = `⏱ ${m}:${s}`;
+                timerEl.className = remaining < 60 ? 'text-sm font-bold text-red-600 animate-pulse' : 'text-sm font-semibold text-amber-600';
+            }
+            if (remaining <= 0) {
+                clearInterval(testData.timerInterval);
+                finishTest();
+            }
+        }, 1000);
+    }
+
+    function renderCurrentQuestion() {
+        const q = testData.questions[testData.currentQ];
+        const n = testData.questions.length;
+        const i = testData.currentQ;
+
+        document.getElementById('testProgress').textContent = `Savol: ${i + 1} / ${n}`;
+        document.getElementById('prevBtn').disabled = i === 0;
+
+        const isLast = i === n - 1;
+        document.getElementById('nextBtn').classList.toggle('hidden', isLast);
+        document.getElementById('finishBtn').classList.toggle('hidden', !isLast);
+
+        const selectedChoice = testData.answers[q.id];
+
+        document.getElementById('testQuestionsContainer').innerHTML = `
+        <div>
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">${i + 1} / ${n}</span>
+                <div class="flex-1 bg-gray-100 rounded-full h-1.5">
+                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${((i+1)/n*100).toFixed(0)}%"></div>
+                </div>
+            </div>
+            <h3 class="text-base font-semibold text-gray-900 mb-5 leading-relaxed">${q.text}</h3>
+            <div class="space-y-2">
+                ${q.choices.map(c => `
+                <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+                    ${selectedChoice === c.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
+                    }">
+                    <input type="radio" name="q${q.id}" value="${c.id}" class="w-4 h-4 text-blue-600"
+                        ${selectedChoice === c.id ? 'checked' : ''}
+                        onchange="selectAnswer(${q.id}, ${c.id})"/>
+                    <span class="text-sm font-medium text-gray-800">${c.text}</span>
+                </label>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    function selectAnswer(questionId, choiceId) {
+        testData.answers[questionId] = choiceId;
+    }
+
+    function nextQuestion() {
+        if (testData.currentQ < testData.questions.length - 1) {
+            testData.currentQ++;
+            renderCurrentQuestion();
+        }
+    }
+
+    function prevQuestion() {
+        if (testData.currentQ > 0) {
+            testData.currentQ--;
+            renderCurrentQuestion();
+        }
+    }
+
+    async function finishTest() {
+        clearInterval(testData.timerInterval);
+
+        const answers = Object.entries(testData.answers).map(([qId, cId]) => ({
+            question_id: parseInt(qId),
+            choice_id: cId,
+        }));
+
+        try {
+            const result = await AssessmentsAPI.tests.submitAttempt(
+                testData.testId, testData.attemptId, answers
+            );
+            closeModal('testModal');
+
+            // Natija modali
+            const score = result.score || 0;
+            const grade = result.grade;
+            document.getElementById('resultEmoji').textContent = grade >= 4 ? '🎉' : grade === 3 ? '📖' : '⚠️';
+            document.getElementById('resultTitle').textContent = grade >= 4 ? 'Ajoyib natija!' : 'Test yakunlandi';
+            document.getElementById('resultScore').textContent = score + '%';
+            document.getElementById('resultGrade').innerHTML = gradeBadge(grade);
+            document.getElementById('resultDetail').textContent =
+                `To'g'ri javoblar: ${result.correct} / ${result.total}`;
+            openModal('testResultModal');
+        } catch (err) {
+            showToast('Test topshirilmadi: ' + err.message, 'error');
+        }
+    }
+
+    // Initial filter
+    filterItems('all');
+</script>
+</body>
+</html>

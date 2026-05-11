@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistika | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'IBM Plex Sans', sans-serif; }</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Umumiy statistika</h1>
+                <p class="text-gray-500 text-sm mt-0.5">Platforma bo'yicha o'zlashtirish ko'rsatkichlari</p>
+            </div>
+
+            <!-- Summary cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-3xl mb-2">👥</div>
+                    <div class="text-2xl font-bold text-gray-900" id="s-students">–</div>
+                    <div class="text-sm text-gray-500">Jami talabalar</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-3xl mb-2">🏫</div>
+                    <div class="text-2xl font-bold text-gray-900" id="s-groups">–</div>
+                    <div class="text-sm text-gray-500">Faol guruhlar</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-3xl mb-2">👨‍🏫</div>
+                    <div class="text-2xl font-bold text-gray-900" id="s-teachers">–</div>
+                    <div class="text-sm text-gray-500">O'qituvchilar</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <div class="text-3xl mb-2">📚</div>
+                    <div class="text-2xl font-bold text-gray-900">12</div>
+                    <div class="text-sm text-gray-500">MTA mavzulari</div>
+                </div>
+            </div>
+
+            <!-- Charts row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Baholar taqsimoti -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <h2 class="font-semibold text-gray-900 mb-4">Baholar taqsimoti (barcha guruhlar)</h2>
+                    <canvas id="gradesChart" height="220"></canvas>
+                </div>
+                <!-- Guruhlar bo'yicha talabalar -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <h2 class="font-semibold text-gray-900 mb-4">Guruhlar bo'yicha talabalar soni</h2>
+                    <canvas id="groupsChart" height="220"></canvas>
+                </div>
+            </div>
+
+            <!-- Guruhlar o'zlashtirish jadvali -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h2 class="font-semibold text-gray-900">Guruhlar o'zlashtirish jadvali</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-100">
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Guruh</th>
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">O'qituvchi</th>
+                                <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Talabalar</th>
+                                <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase">O'rtacha baho</th>
+                                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groupStatsTable" class="divide-y divide-gray-50">
+                            <tr><td colspan="5" class="py-10 text-center text-gray-400">Yuklanmoqda...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    const user = requireAuth(['admin']);
+    if (user) {
+        renderLayout('sidebar');
+        loadStats();
+    }
+
+    async function loadStats() {
+        try {
+            const [userStats, groupsData] = await Promise.all([
+                UsersAPI.stats(),
+                GroupsAPI.list()
+            ]);
+
+            const groups = groupsData.results || groupsData;
+
+            document.getElementById('s-students').textContent = userStats.total_students;
+            document.getElementById('s-teachers').textContent = userStats.total_teachers;
+            document.getElementById('s-groups').textContent = groups.filter(g => g.is_active).length;
+
+            // Guruhlar statistikasi (parallel)
+            const groupStats = await Promise.all(
+                groups.map(g => GroupsAPI.statistics(g.id).catch(() => null))
+            );
+
+            renderGroupsChart(groups);
+            renderGradesChart(groupStats);
+            renderGroupStatsTable(groups, groupStats);
+
+        } catch (err) {
+            console.error('Stats error:', err);
+        }
+    }
+
+    function renderGradesChart(groupStats) {
+        const counts = { 5: 0, 4: 0, 3: 0, 2: 0 };
+        groupStats.forEach(gs => {
+            if (!gs) return;
+            (gs.students || []).forEach(s => {
+                const g = Math.round(s.average_grade);
+                if (counts[g] !== undefined) counts[g]++;
+            });
+        });
+
+        new Chart(document.getElementById('gradesChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ["A'lo (5)", "Yaxshi (4)", "Qoniqarli (3)", "Qoniqarsiz (2)"],
+                datasets: [{
+                    data: [counts[5], counts[4], counts[3], counts[2]],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 6,
+                }]
+            },
+            options: {
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 12, family: 'IBM Plex Sans' }, padding: 16 } } },
+                cutout: '65%',
+            }
+        });
+    }
+
+    function renderGroupsChart(groups) {
+        new Chart(document.getElementById('groupsChart'), {
+            type: 'bar',
+            data: {
+                labels: groups.map(g => g.name),
+                datasets: [{
+                    label: 'Talabalar soni',
+                    data: groups.map(g => g.student_count || 0),
+                    backgroundColor: '#6366f1',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderGroupStatsTable(groups, groupStats) {
+        const tbody = document.getElementById('groupStatsTable');
+
+        if (!groups.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-400">Guruhlar yo\'q</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = groups.map((g, i) => {
+            const gs = groupStats[i];
+            const avgGrade = gs ? (gs.students.reduce((s, st) => s + (st.average_grade || 0), 0) / (gs.students.length || 1)).toFixed(1) : '–';
+            const avgProgress = gs ? (gs.students.reduce((s, st) => s + (st.progress_percent || 0), 0) / (gs.students.length || 1)).toFixed(0) : 0;
+
+            const gradeColor = avgGrade >= 4.5 ? 'text-emerald-600' : avgGrade >= 3.5 ? 'text-blue-600' : avgGrade >= 2.5 ? 'text-amber-600' : 'text-red-500';
+
+            return `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-5 py-3.5">
+                    <div class="font-semibold text-gray-900">${g.name}</div>
+                    <div class="text-xs text-gray-400">${g.year}-yil</div>
+                </td>
+                <td class="px-5 py-3.5 text-sm text-gray-600">${g.teacher_name || '–'}</td>
+                <td class="px-5 py-3.5 text-center">
+                    <span class="font-semibold text-gray-900">${g.student_count || 0}</span>
+                </td>
+                <td class="px-5 py-3.5 text-center">
+                    <span class="font-bold text-lg ${gradeColor}">${avgGrade}</span>
+                </td>
+                <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1">
+                            ${renderProgressBar(avgProgress, 'indigo', 'sm')}
+                        </div>
+                        <span class="text-xs text-gray-500 w-10 text-right">${avgProgress}%</span>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+</script>
+</body>
+</html>

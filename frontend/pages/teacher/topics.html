@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mavzular (M1–M12) | Urdu Education</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'IBM Plex Sans', sans-serif; }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
+        .tab-active { background: #2563eb; color: white; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div id="mobile-header"></div>
+<div class="flex min-h-screen">
+    <div id="sidebar" class="hidden md:block flex-shrink-0"></div>
+
+    <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <div class="max-w-6xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Mavzular boshqaruvi</h1>
+                    <p class="text-gray-500 text-sm mt-0.5">MTA kursi — 12 ta asosiy mavzu (Sillabus asosida)</p>
+                </div>
+            </div>
+
+            <!-- MTA Topic grid M1-M12 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="topicsGrid">
+                <div class="col-span-full py-10 text-center text-gray-400">Yuklanmoqda...</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Mavzu tahrirlash/yaratish modali (katta modal) -->
+<div id="topicEditModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-overlay absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl z-10 max-h-[92vh] flex flex-col overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900" id="modalTopicTitle">Mavzu</h2>
+                <p class="text-sm text-gray-500" id="modalTopicCode"></p>
+            </div>
+            <button onclick="closeModal('topicEditModal')" class="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-100 flex-shrink-0 px-6 pt-2 gap-1">
+            <button onclick="switchTab('lecture')" class="tab-btn tab-active px-4 py-2 rounded-t-lg text-sm font-medium" data-tab="lecture">📖 Dars matni</button>
+            <button onclick="switchTab('code')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-medium text-gray-500 hover:text-gray-900" data-tab="code">💻 Kod & Psevdokod</button>
+            <button onclick="switchTab('media')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-medium text-gray-500 hover:text-gray-900" data-tab="media">🎬 Video & PDF</button>
+            <button onclick="switchTab('settings')" class="tab-btn px-4 py-2 rounded-t-lg text-sm font-medium text-gray-500 hover:text-gray-900" data-tab="settings">⚙️ Sozlamalar</button>
+        </div>
+
+        <form id="topicForm" class="flex-1 overflow-y-auto">
+            <input type="hidden" id="editTopicId"/>
+
+            <!-- TAB: Dars matni -->
+            <div id="tab-lecture" class="tab-content p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mavzu nomi *</label>
+                    <input type="text" id="t-title"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        placeholder="Mavzu nomini kiriting"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Qisqacha tavsif</label>
+                    <textarea id="t-description" rows="2"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none"
+                        placeholder="Talabaga qisqacha tushuntirish..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Dars matni (80 daqiqalik ma'ruza matni)
+                        <span class="text-xs text-gray-400 font-normal ml-1">— HTML yoki oddiy matn</span>
+                    </label>
+                    <textarea id="t-lecture" rows="14"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-y mono"
+                        placeholder="Dars matnini kiriting. HTML teglarini ham ishlatishingiz mumkin..."></textarea>
+                </div>
+            </div>
+
+            <!-- TAB: Kod & Psevdokod -->
+            <div id="tab-code" class="tab-content hidden p-6 space-y-4">
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
+                    💡 <strong>Eslatma:</strong> Kodlar Visual Studio Code uchun mo'ljallangan, toza va izohli bo'lishi shart.
+                    C, C++ yoki Python tilida yozilishi mumkin.
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Psevdokod</label>
+                    <textarea id="t-pseudo" rows="8"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-y mono"
+                        placeholder="ALGORITHM TopshiriqNomi(parametrlar)&#10;BEGIN&#10;    // Bosqichlar...&#10;END"></textarea>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-semibold text-gray-700">Haqiqiy kod (VSCode uchun)</label>
+                        <select id="t-lang"
+                            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
+                            <option value="cpp">C++</option>
+                            <option value="c">C</option>
+                            <option value="python">Python</option>
+                        </select>
+                    </div>
+                    <textarea id="t-code" rows="14"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-y mono"
+                        placeholder="// Izohlangan, toza kod...&#10;#include &lt;iostream&gt;&#10;using namespace std;&#10;&#10;int main() {&#10;    // ...&#10;}"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Vizualizatsiya turi</label>
+                    <select id="t-viz"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
+                        <option value="none">Yo'q</option>
+                        <option value="sort">Saralash animatsiyasi</option>
+                        <option value="search">Qidiruv animatsiyasi</option>
+                        <option value="bst">BST (Binar qidiruv daraxti)</option>
+                        <option value="avl">AVL daraxti</option>
+                        <option value="heap">Heap Tree</option>
+                        <option value="bfs">BFS graflar</option>
+                        <option value="dfs">DFS graflar</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- TAB: Video & PDF -->
+            <div id="tab-media" class="tab-content hidden p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Video URL (YouTube yoki boshqa)</label>
+                    <input type="url" id="t-video"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        placeholder="https://www.youtube.com/watch?v=..."/>
+                    <p class="text-xs text-gray-400 mt-1">YouTube, Vimeo yoki boshqa video platformasi manzili</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">PDF / Slayd fayl yuklash</label>
+                    <div class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                         onclick="document.getElementById('t-pdf').click()">
+                        <div class="text-3xl mb-2">📄</div>
+                        <p class="text-sm text-gray-600 font-medium">PDF yoki PPTX faylni tanlang</p>
+                        <p class="text-xs text-gray-400 mt-1">Maksimal: 20 MB</p>
+                        <input type="file" id="t-pdf" class="hidden" accept=".pdf,.pptx,.ppt"/>
+                    </div>
+                    <div id="pdfFileName" class="hidden mt-2 text-sm text-blue-600 font-medium"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Sozlamalar -->
+            <div id="tab-settings" class="tab-content hidden p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Dars davomiyligi (daqiqa)</label>
+                    <input type="number" id="t-duration" value="80" min="10" max="300"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
+                    <p class="text-xs text-gray-400 mt-1">Sillabus bo'yicha standart: 80 daqiqa</p>
+                </div>
+                <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                    <input type="checkbox" id="t-published" class="w-5 h-5 text-blue-600 rounded"/>
+                    <div>
+                        <label for="t-published" class="font-semibold text-gray-900 cursor-pointer">Mavzuni nashr qilish</label>
+                        <p class="text-xs text-gray-500">Nashr qilingan mavzular talabalar uchun ko'rinadi</p>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-700">
+                    ⚠️ <strong>Muhim:</strong> Ketma-ketlik qoidasi: M1 yakunlanmasa M2 ochilmaydi.
+                    Bu qoida tizim tomonidan avtomatik nazorat qilinadi.
+                </div>
+            </div>
+        </form>
+
+        <!-- Footer buttons -->
+        <div class="px-6 py-4 border-t border-gray-100 flex gap-3 flex-shrink-0 bg-gray-50">
+            <button onclick="closeModal('topicEditModal')"
+                class="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-100 transition-colors">
+                Bekor qilish
+            </button>
+            <div class="flex-1"></div>
+            <button onclick="saveTopic()"
+                class="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors">
+                💾 Saqlash
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/api.js"></script>
+<script src="/components/layout.js"></script>
+<script>
+    // Sillabus asosida 12 ta mavzu metadatasi
+    const TOPIC_META = {
+        M1:  { soat: 2,  amaliy: 'A1',  title: "Ma'lumotlarning abstrakt tuzilmalari. Algoritmlarni ishlab chiqish va tahlil qilish" },
+        M2:  { soat: 2,  amaliy: 'A2',  title: "Rekursiv algoritmlar. Ularning tahlili" },
+        M3:  { soat: 4,  amaliy: 'A3',  title: "Qidiruv algoritmlari. Xeshlash" },
+        M4:  { soat: 4,  amaliy: 'A4',  title: "Ma'lumotlarni saralash algoritmlari" },
+        M5:  { soat: 2,  amaliy: 'A8',  title: "Statik va dinamik massivlar. Bog'langan ro'yxatlar" },
+        M6:  { soat: 4,  amaliy: 'A9',  title: "Navbat, stek va dek tuzilmalari" },
+        M7:  { soat: 2,  amaliy: 'A12', title: "Daraxtsimon ma'lumotlar tuzilmalari" },
+        M8:  { soat: 2,  amaliy: 'A12', title: "Binar qidiruv daraxti. AVL daraxti. Muvozanatlash" },
+        M9:  { soat: 2,  amaliy: 'A13', title: "Heap tree ko'rinishidagi binar daraxtlar" },
+        M10: { soat: 2,  amaliy: 'A14', title: "Graflar bilan ishlash algoritmlari" },
+        M11: { soat: 2,  amaliy: 'A14', title: "BFS va DFS ko'ruv algoritmlari" },
+        M12: { soat: 2,  amaliy: 'A15', title: "Eng qisqa yo'l: Floyd, Ford-Bellman, Dijkstra" },
+    };
+
+    const user = requireAuth(['teacher']);
+    if (user) {
+        renderLayout('sidebar');
+        loadTopics();
+    }
+
+    let topicsData = {};
+
+    async function loadTopics() {
+        try {
+            const data = await CoursesAPI.list();
+            const topics = (data.results || data);
+            // Map by code
+            topics.forEach(t => topicsData[t.code] = t);
+            renderTopicsGrid();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderTopicsGrid() {
+        const grid = document.getElementById('topicsGrid');
+        const codes = ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+
+        grid.innerHTML = codes.map(code => {
+            const meta = TOPIC_META[code];
+            const topic = topicsData[code];
+            const isPublished = topic?.is_published;
+            const hasContent = topic && (topic.lecture_content || topic.video_url || topic.real_code);
+
+            return `
+            <div class="bg-white rounded-2xl border ${isPublished ? 'border-blue-100' : 'border-gray-100'} shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div class="p-4">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold mono bg-blue-600 text-white px-2 py-0.5 rounded-lg">${code}</span>
+                            <span class="text-xs text-gray-400">${meta.soat} soat</span>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${
+                            isPublished
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-gray-100 text-gray-500'
+                        }">
+                            ${isPublished ? '● Nashr' : '○ Qoralama'}
+                        </span>
+                    </div>
+
+                    <!-- Title -->
+                    <h3 class="font-semibold text-gray-900 text-sm leading-snug mb-3">${topic?.title || meta.title}</h3>
+
+                    <!-- Content checklist -->
+                    <div class="space-y-1 mb-4">
+                        ${checkItem('Dars matni', !!(topic?.lecture_content))}
+                        ${checkItem('Psevdokod', !!(topic?.pseudo_code))}
+                        ${checkItem('Haqiqiy kod (VSCode)', !!(topic?.real_code))}
+                        ${checkItem('Video dars', !!(topic?.video_url))}
+                        ${checkItem('PDF/Slayd', !!(topic?.pdf_file))}
+                    </div>
+
+                    <!-- Amaliy dars -->
+                    <div class="text-xs text-gray-400 mb-3 bg-gray-50 rounded-lg px-3 py-2">
+                        📋 Amaliy: <span class="font-medium text-gray-600">${meta.amaliy}</span>
+                    </div>
+                </div>
+                <!-- Actions -->
+                <div class="border-t border-gray-100 px-4 py-3">
+                    <button onclick="openTopicEdit('${code}')"
+                        class="w-full py-2 rounded-xl text-sm font-semibold transition-colors
+                               ${hasContent
+                                   ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                   : 'bg-blue-600 text-white hover:bg-blue-700'
+                               }">
+                        ${hasContent ? '✏️ Tahrirlash' : '➕ To\'ldirish'}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function checkItem(label, done) {
+        return `<div class="flex items-center gap-2 text-xs">
+            <span class="${done ? 'text-emerald-500' : 'text-gray-300'}">${done ? '✓' : '○'}</span>
+            <span class="${done ? 'text-gray-600' : 'text-gray-400'}">${label}</span>
+        </div>`;
+    }
+
+    // ── MODAL ──────────────────────────────────────────────────
+
+    function openTopicEdit(code) {
+        const meta = TOPIC_META[code];
+        const topic = topicsData[code];
+
+        document.getElementById('modalTopicTitle').textContent = meta.title;
+        document.getElementById('modalTopicCode').textContent = code + ' — ' + meta.soat + ' soat | Amaliy: ' + meta.amaliy;
+        document.getElementById('editTopicId').value = topic?.id || '';
+
+        // Formani to'ldirish
+        document.getElementById('t-title').value = topic?.title || meta.title;
+        document.getElementById('t-description').value = topic?.description || '';
+        document.getElementById('t-lecture').value = topic?.lecture_content || '';
+        document.getElementById('t-pseudo').value = topic?.pseudo_code || '';
+        document.getElementById('t-code').value = topic?.real_code || '';
+        document.getElementById('t-lang').value = topic?.code_language || 'cpp';
+        document.getElementById('t-viz').value = topic?.visualization_type || 'none';
+        document.getElementById('t-video').value = topic?.video_url || '';
+        document.getElementById('t-duration').value = topic?.lecture_duration || 80;
+        document.getElementById('t-published').checked = topic?.is_published || false;
+
+        // Mavzu kodini data attributda saqlash
+        document.getElementById('topicForm').dataset.code = code;
+
+        switchTab('lecture');
+        openModal('topicEditModal');
+    }
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('tab-active', 'text-white', 'bg-blue-600');
+            btn.classList.add('text-gray-500');
+        });
+
+        document.getElementById('tab-' + name).classList.remove('hidden');
+        const activeBtn = document.querySelector(`[data-tab="${name}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('text-gray-500');
+        }
+    }
+
+    // PDF fayl tanlash
+    document.getElementById('t-pdf').addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            document.getElementById('pdfFileName').textContent = '📄 ' + file.name;
+            document.getElementById('pdfFileName').classList.remove('hidden');
+        }
+    });
+
+    async function saveTopic() {
+        const topicId = document.getElementById('editTopicId').value;
+        const code = document.getElementById('topicForm').dataset.code;
+
+        const data = {
+            code: code,
+            title: document.getElementById('t-title').value.trim(),
+            description: document.getElementById('t-description').value.trim(),
+            lecture_content: document.getElementById('t-lecture').value,
+            pseudo_code: document.getElementById('t-pseudo').value,
+            real_code: document.getElementById('t-code').value,
+            code_language: document.getElementById('t-lang').value,
+            visualization_type: document.getElementById('t-viz').value,
+            video_url: document.getElementById('t-video').value.trim(),
+            lecture_duration: parseInt(document.getElementById('t-duration').value),
+            is_published: document.getElementById('t-published').checked,
+        };
+
+        try {
+            if (topicId) {
+                // Mavjud mavzuni yangilash
+                const pdfFile = document.getElementById('t-pdf').files[0];
+                if (pdfFile) {
+                    const formData = new FormData();
+                    Object.entries(data).forEach(([k, v]) => formData.append(k, v));
+                    formData.append('pdf_file', pdfFile);
+                    await CoursesAPI.updateTopic(topicId, formData);
+                } else {
+                    await CoursesAPI.updateTopic(topicId, data);
+                }
+                showToast('Mavzu yangilandi!', 'success');
+            } else {
+                // Yangi mavzu yaratish
+                await CoursesAPI.create(data);
+                showToast('Mavzu yaratildi!', 'success');
+            }
+            closeModal('topicEditModal');
+            loadTopics();
+        } catch (err) {
+            showToast('Xato: ' + err.message, 'error');
+        }
+    }
+</script>
+</body>
+</html>
